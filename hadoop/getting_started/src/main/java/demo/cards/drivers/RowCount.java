@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.Path;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.NullWritable;
 
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -36,7 +37,7 @@ public class RowCount extends Configured implements Tool {
 
 	public int run(String[] args) throws Exception {
 		Job job = Job.getInstance(getConf(),
-				"Word Count using built in mappers and reducers");
+				"Row Count using built in mappers and reducers");
 
 		job.setJarByClass(getClass());
 
@@ -67,7 +68,7 @@ public class RowCount extends Configured implements Tool {
 		job.setReducerClass(NoKeyRecordCountReducer.class);
 		// Output from reducer <Number of records>
 
-		job.setOutputKeyClass(Text.class);
+		job.setOutputKeyClass(NullWritable.class);
 		job.setOutputValueClass(IntWritable.class);
 
 		// We are not setting output format class and hence uses default

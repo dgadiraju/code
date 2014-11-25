@@ -20,5 +20,11 @@ public class NoKeyRecordCountReducer extends
 		}
 
 		context.write(NullWritable.get(), new IntWritable(sum));
+		//output for our largedeck
+		//count	54525952
+		
+		//output for out deckofcards
+		//count	52
+		
 	}
 }

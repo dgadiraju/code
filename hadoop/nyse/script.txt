@@ -1,0 +1,36 @@
+create database if not exists nyse_gbdc;
+
+create table companylist
+(symbol string,
+name string, 
+lastsale decimal,
+marketcap decimal,
+adrtso string,
+ipoyear string,
+sector string,
+industry string,
+summaryquote string)
+row format delimited fields terminated by '|'
+stored as textfile;
+
+create external table stock_eod 
+(stockticker string, 
+transactiondate string, 
+openprice float, 
+highprice float, 
+lowprice float, 
+closeprice float, 
+volume bigint) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+LOCATION '/user/admin/dgadiraju/nyse_eod';
+
+create table stock_volume_per_month 
+row format delimited fields terminated by '|' 
+as 
+select cl.sector, cl.name, 
+substr(datetranslate(s.transactiondate), 1, 7) transactionmonth, 
+sum(s.volume) monthlyvolume from companylist cl 
+join stock_eod s on s.stockticker = cl.symbol 
+where s.transactiondate like '%2013' 
+group by cl.sector, cl.name, substr(datetranslate(s.transactiondate), 1, 7) 
+order by sector, name, transactionmonth;

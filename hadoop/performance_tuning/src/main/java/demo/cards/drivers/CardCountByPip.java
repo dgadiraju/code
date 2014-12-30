@@ -67,7 +67,7 @@ public class CardCountByPip extends Configured implements Tool {
 //        job.setCombinerClass(Reduce.class);
         job.setReducerClass(Reduce.class);
 
-        job.setNumReduceTasks(2);
+//        job.setNumReduceTasks(2);
 
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);

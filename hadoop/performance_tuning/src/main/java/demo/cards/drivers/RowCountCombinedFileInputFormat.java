@@ -46,8 +46,10 @@ public class RowCountCombinedFileInputFormat extends Configured implements Tool 
 		job.setJarByClass(getClass());
 
 		FileInputFormat.setInputPaths(job, new Path(args[0]));
-		// We are not setting input format class and hence uses
-		// (TextInputFormat)
+
+		// Setting input format class to reduce number of mappers 
+		// in case of there are many small files significantly less than
+		// block size
 		job.setInputFormatClass(CombineTextInputFormat.class);
 		CombineTextInputFormat.setMaxInputSplitSize(job, 128000000);
 		

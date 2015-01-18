@@ -5,9 +5,17 @@ admin
 
 #Putty or ssh tool
 hduser/hadoop20@ec2-54-86-249-69.compute-1.amazonaws.com
+hduser/hadoop20@ec2-54-172-111-127.compute-1.amazonaws.com
 ipaddress:ec2-54-86-249-69.compute-1.amazonaws.com
+ipaddress:ec2-54-172-111-127.compute-1.amazonaws.com
 username:hduser
 password:hadoop20
+
+#Namenode WI
+http://ec2-54-174-122-17.compute-1.amazonaws.com:50070
+
+#Resourcemanager WI
+http://ec2-54-172-121-239.compute-1.amazonaws.com:8088
 
 #Prepare data (Cards and NYSE)
 #Use compression to copy data to Hadoop Gateway node

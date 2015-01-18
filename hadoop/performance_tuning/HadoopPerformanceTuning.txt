@@ -1,3 +1,10 @@
+#www.github.com/dgadiraju
+#www.youtube.com/c/TechnologyMentor
+#www.linkedin.com/in/durga0gadiraju
+#www.facebook.com/itversity
+#www.twitter.com/itversity
+#www.meetup.com/BIG-Big-Data-Interest-Group
+
 #Connect to host:
 http://ec2-54-86-249-69.compute-1.amazonaws.com:7180
 admin

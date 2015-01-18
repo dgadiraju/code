@@ -1,0 +1,133 @@
+#Connect to host:
+http://ec2-54-86-249-69.compute-1.amazonaws.com:7180
+admin
+admin
+
+#Putty or ssh tool
+hduser/hadoop20@ec2-54-86-249-69.compute-1.amazonaws.com
+ipaddress:ec2-54-86-249-69.compute-1.amazonaws.com
+username:hduser
+password:hadoop20
+
+#Prepare data (Cards and NYSE)
+#Use compression to copy data to Hadoop Gateway node
+#From localhost
+scp /Users/kavithapenmetsa/Documents/Google\ Hadoop\ Training\ /Personal/data/cards/largedeck.txt.gz \
+hduser@ec2-54-86-249-69.compute-1.amazonaws.com:~/data/cards
+scp -r /Users/kavithapenmetsa/Documents/Google\ Hadoop\ Training\ /Personal/data/cards/smalldecks \
+hduser@ec2-54-86-249-69.compute-1.amazonaws.com:~/data/cards
+scp -r /Users/kavithapenmetsa/Documents/Google\ Hadoop\ Training\ /Personal/data/cards/zippeddecks \
+hduser@ec2-54-86-249-69.compute-1.amazonaws.com:~/data/cards
+scp -r /Users/kavithapenmetsa/Documents/Google\ Hadoop\ Training\ /Personal/data/cards/compression \
+hduser@ec2-54-86-249-69.compute-1.amazonaws.com:~/data/cards
+ssh hduser@ec2-54-86-249-69.compute-1.amazonaws.com
+cd ~/data/cards
+gunzip largedeck.txt.gz
+hadoop fs -mkdir /user/hduser/cards
+hadoop fs -put largedeck.txt /user/hduser/cards
+
+#1. Interpret Counters (Run CardCountByPip with 4 reducers)
+# Run the Job
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+/user/hduser/cards/largedeck.txt /user/hduser/dg.output.cardcountbypip
+
+#2. Passing parameters at run time
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+-Dmapreduce.job.reduces=13 /user/hduser/cards/largedeck.txt /user/hduser/dg.output.cardcountbypip
+
+#3. Split Size
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+-Dmapreduce.input.fileinputformat.split.minsize=512000000 /user/hduser/cards/largedeck.txt /user/hduser/dg.output.cardcountbypip
+
+#Hive
+create database cards;
+use cards;
+CREATE TABLE large_deck (
+COLOR string,
+SUIT string,
+PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+LOAD DATA LOCAL INPATH '/home/hduser/data/cards/largedeck.txt' INTO TABLE large_deck;
+select pip, count(1) from large_deck group by pip;
+set mapreduce.input.fileinputformat.split.minsize=512000000;
+select pip, count(1) from large_deck group by pip;
+
+#4. Number of Reducers (with out and with custom partitioner)
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+-Dmapreduce.job.reduces=13 /user/hduser/cards/largedeck.txt /user/hduser/dg.output.cardcountbypip
+
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+-Dmapreduce.job.reduces=13 \
+-Dmapreduce.job.partitioner.class=demo.cards.drivers.CardCountByPip\$PipPartitionerNoSkew \
+/user/hduser/cards/largedeck.txt /user/hduser/dg.output.cardcountbypip
+
+#Hive
+use cards;
+set mapreduce.job.reduces=13;
+select pip, count(1) from large_deck group by pip;
+
+#5. Combiners  (Run CardCountByPip using combiner)
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+-Dmapreduce.job.reduces=13 \
+-Dmapreduce.job.combine.class=demo.cards.drivers.CardCountByPip\$Reduce \
+-Dmapreduce.job.partitioner.class=demo.cards.drivers.CardCountByPip\$PipPartitionerNoSkew \
+/user/hduser/cards/largedeck.txt /user/hduser/dg.output.cardcountbypip
+
+#Hive: Not Applicable
+#Combiners are already implemented in hive queries
+
+#6. Distributed Cache
+#No demo in java
+
+#7. Map Side Join - demo using Hive uses distributed cache
+
+#8. Compression
+hadoop fs -rm -R /user/hduser/dg.output.cardcountbypip
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountByPip \
+-Dmapreduce.job.reduces=13 \
+-Dmapreduce.job.combine.class=demo.cards.drivers.CardCountByPip\$Reduce \
+-Dmapreduce.job.partitioner.class=demo.cards.drivers.CardCountByPip\$PipPartitionerNoSkew \
+/user/hduser/cards/small_decks /user/hduser/dg.output.cardcountbypip
+
+#Hive: Typically no changes to Hive. You can enable compression on map output.
+
+#9. Combine File Input Format (to reduce map reduce resources while processing small files)
+hadoop fs -rm -R /user/hduser/dg.output.cardcount
+hadoop jar performance_tuning.jar demo.cards.drivers.RowCountCombinedFileInputFormat \
+/user/hduser/cards/small_decks /user/hduser/dg.output.cardcount
+
+#Hive: Not Applicable (enabled by default)
+
+#10. Filtering (Run CardCountBySuitFilteredByPipAndColor)
+hadoop fs -rm -R /user/hduser/dg.output.cardcount
+hadoop jar performance_tuning.jar demo.cards.drivers.CardCountBySuitFilteredByPipAndColor \
+/user/hduser/cards/partitioned_decks /user/hduser/dg.output.cardcount
+
+#Hive: Not Applicable
+
+#11. Hive Query Sort By vs. Order By
+CREATE TABLE large_deck_sort_by_pip
+AS SELECT * FROM large_deck SORT BY pip;
+
+CREATE TABLE large_deck_order_by_pip
+AS SELECT * FROM large_deck ORDER BY pip;
+
+#12. Hive Partitioning (Partition Pruning)
+CREATE TABLE deck_of_cards_pby_pip (
+COLOR string,
+SUIT string)
+PARTITIONED BY (PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+INSERT OVERWRITE TABLE deck_of_cards_pby_pip PARTITION (pip) SELECT * FROM large_deck;
+
+SELECT suit, count(1) FROM deck_of_cards_pby_pip WHERE pip='J' AND color='RED' GROUP BY suit;

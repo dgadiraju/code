@@ -24,6 +24,16 @@ volume bigint)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
 LOCATION '/user/admin/dgadiraju/nyse_eod';
 
+#Choose Query Editors
+#Click on Settings
+#Under File Resources change Type to Jar, 
+#then upload the volume_analytics.jar file from github
+#You can get volume_analytics.jar file from
+#https://github.com/dgadiraju/code/blob/master/hadoop/volume_analytics.jar
+#Then function name datetranslate
+#class name analytics.nyse.hive.udfs.DateTranslate
+
+#Once function is created, you can run below query
 create table stock_volume_per_month 
 row format delimited fields terminated by '|' 
 as 

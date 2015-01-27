@@ -1,0 +1,3 @@
+-- Create ods database
+
+-- Create edw database

@@ -79,7 +79,7 @@ PARTITIONED BY (order_month string)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
 STORED AS TEXTFILE;
 
-CREATE TABLE orders (
+CREATE TABLE orders_bucket (
 order_id int,
 order_date string,
 order_customer_id int,
@@ -89,7 +89,7 @@ CLUSTERED BY (order_id) INTO 16 BUCKETS
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
 STORED AS TEXTFILE;
 
-CREATE TABLE order_items (
+CREATE TABLE order_items_bucket (
 order_item_id int,
 order_item_order_id int,
 order_item_order_date string,

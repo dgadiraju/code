@@ -35,7 +35,7 @@ category_name string
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
 STORED AS TEXTFILE;
 
-CREATE TABLE categories (
+CREATE TABLE customers (
 customer_id       int,
 customer_fname    string,
 customer_lname    string,

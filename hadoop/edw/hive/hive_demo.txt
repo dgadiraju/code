@@ -17,9 +17,9 @@ CREATE EXTERNAL TABLE deck_of_cards_external (
 COLOR string,
 SUIT string,
 PIP string)
-LOCATION '/user/hive/warehouse/cards.db/deck_of_cards'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
-STORED AS TEXTFILE;
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/cards.db/deck_of_cards';
 
 -- Create ods and edw database for retail_db@mysql
 CREATE DATABASE IF NOT EXISTS retail_ods;

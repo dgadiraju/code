@@ -1,3 +1,15 @@
--- Create ods database
+-- Create sample database
+CREATE DATABASE IF NOT EXISTS cards;
 
--- Create edw database
+CREATE TABLE deck_of_cards (
+COLOR string,
+SUIT string,
+PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/cloudera/demo/data/cards/deckofcards.txt' INTO TABLE deck_of_cards;
+
+-- Create ods and edw database for retail_db@mysql
+CREATE DATABASE IF NOT EXISTS retail_ods;
+CREATE DATABASE retail_edw;

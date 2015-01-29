@@ -24,6 +24,7 @@ LOCATION '/user/hive/warehouse/cards.db/deck_of_cards';
 -- Create ods and edw database for retail_db@mysql
 CREATE DATABASE IF NOT EXISTS retail_ods;
 CREATE DATABASE retail_edw;
+CREATE DATABASE retail_stage;
 
 -- Create ods tables (mostly they will follow same structure, except additional audit columns)
 use retail_ods;
@@ -114,6 +115,7 @@ ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
 STORED AS TEXTFILE;
 
 -- Create edw tables (following dimension model)
+use retail_edw;
 CREATE TABLE products_dimension (
 product_id int,
 product_name string,
@@ -136,3 +138,48 @@ order_item_product_price float
 PARTITIONED BY (product_category_department string)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
 STORED AS TEXTFILE;
+
+-- Create external tables for retail_stage
+use retail_stage;
+
+CREATE EXTERNAL TABLE categories
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/categories'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/sqoop_import_categories.avsc');
+
+CREATE EXTERNAL TABLE customers
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/customers'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/customers.avsc');
+
+CREATE EXTERNAL TABLE departments
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/departments'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/departments.avsc');
+
+CREATE EXTERNAL TABLE orders
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/orders'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/orders.avsc');
+
+CREATE EXTERNAL TABLE order_items
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/order_items'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/order_items.avsc');
+
+CREATE EXTERNAL TABLE products
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/products'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/products.avsc');

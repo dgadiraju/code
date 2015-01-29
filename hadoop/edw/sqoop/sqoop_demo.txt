@@ -1,0 +1,29 @@
+sqoop list-databases \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera
+
+sqoop list-tables 
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera
+
+sqoop eval 
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --query "select count(1) from order_items"
+
+-- Reference: http://www.cloudera.com/content/cloudera/en/developers/home/developer-admin-resources/get-started-with-hadoop-tutorial/exercise-1.html
+sqoop import-all-tables \
+  -m 12 \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --compression-codec=snappy \
+  --as-avrodatafile \
+  --warehouse-dir=/user/hive/warehouse/retail_stage.db
+
+sudo -u hdfs hadoop fs -mkdir /user/cloudera/retail_stage
+sudo -u hdfs hadoop fs -chmod +rw /user/cloudera/retail_stage
+hadoop fs -copyFromLocal ~/*.avsc /user/cloudera/retail_stage

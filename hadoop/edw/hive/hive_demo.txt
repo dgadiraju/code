@@ -183,3 +183,11 @@ STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputForma
 OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
 LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/products'
 TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/products.avsc');
+
+CREATE TABLE departments_delta (
+department_id int,
+department_name string,
+update_date string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;

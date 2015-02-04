@@ -26,3 +26,85 @@ sqoop import-all-tables \
 sudo -u hdfs hadoop fs -mkdir /user/cloudera/retail_stage
 sudo -u hdfs hadoop fs -chmod +rw /user/cloudera/retail_stage
 hadoop fs -copyFromLocal ~/*.avsc /user/cloudera/retail_stage
+
+-- Basic import
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --target-dir /user/cloudera/departments 
+
+-- Copying into existing table or directory (append)
+-- Customizing number of threads (num-mappers)
+-- Changing delimiter
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --append \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --num-mappers 1 \
+  --outdir java_files
+
+-- Importing table with out primary key using multiple threads (split-by)
+-- When using split-by, using indexed column is highly desired
+-- If the column is not indexed then performance will be bad 
+-- because of full table scan by each of the thread
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --append \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --split-by department_id \
+  --outdir java_files
+
+-- Getting delta (--where)
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --append \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --split-by department_id \
+  --where "department_id > 7" \
+  --outdir java_files
+
+-- Hive related
+-- Overwrite existing data associated with hive table (hive-overwrite)
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --hive-home /user/hive/warehouse/retail_ods.db \
+  --hive-import \
+  --hive-overwrite \
+  --hive-table departments \
+  --outdir java_files
+
+--Create hive table example
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --hive-home /user/hive/warehouse \
+  --hive-import \
+  --hive-table departments_test \
+  --create-hive-table \
+  --outdir java_files

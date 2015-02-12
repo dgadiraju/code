@@ -1,3 +1,8 @@
+-- Upload data using Hue to /user/admin/dam
+-- Create directory /user/admin/dam
+-- Create directory /user/admin/dam/companylist
+-- Create directory /user/admin/dam/stock_eod
+
 create database if not exists nyse_gbdc;
 
 create table companylist
@@ -13,6 +18,8 @@ summaryquote string)
 row format delimited fields terminated by '|'
 stored as textfile;
 
+load data inpath '/user/admin/dam/companylist/*' overwrite into table companylist;
+
 create external table stock_eod 
 (stockticker string, 
 transactiondate string, 
@@ -22,7 +29,7 @@ lowprice float,
 closeprice float, 
 volume bigint) 
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
-LOCATION '/user/admin/dgadiraju/nyse_eod';
+LOCATION '/user/admin/dam/stock_eod';
 
 #Choose Query Editors
 #Click on Settings

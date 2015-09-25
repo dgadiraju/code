@@ -1,5 +1,5 @@
 -- Create sample database
-CREATE DATABASE IF NOT EXISTS cards;
+-- CREATE DATABASE IF NOT EXISTS cards;
 
 CREATE TABLE deck_of_cards (
 COLOR string,
@@ -22,9 +22,9 @@ STORED AS TEXTFILE
 LOCATION '/user/hive/warehouse/cards.db/deck_of_cards';
 
 -- Create ods and edw database for retail_db@mysql
-CREATE DATABASE IF NOT EXISTS retail_ods;
-CREATE DATABASE retail_edw;
-CREATE DATABASE retail_stage;
+-- CREATE DATABASE IF NOT EXISTS retail_ods;
+-- CREATE DATABASE retail_edw;
+-- CREATE DATABASE retail_stage;
 
 -- Create ods tables (mostly they will follow same structure, except additional audit columns)
 use retail_ods;

@@ -1,0 +1,34 @@
+#Prepare orders on mysql database
+#on mysql
+select * from orders into outfile '/tmp/orders.psv' fields terminated by '|' lines terminated by '\n';
+
+#Create orders_stage under hive database retail_stage
+hive
+use retail_stage;
+
+CREATE TABLE orders_stage (
+order_id int,
+order_date string,
+order_customer_id int,
+order_status string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+load data local inpath '/tmp/orders.psv' overwrite into table orders_stage;
+
+insert overwrite table retail_ods.orders partition (order_month)
+select order_id, order_date, order_customer_id, order_status,
+substr(order_date, 1, 7) order_month from retail_stage.orders_stage;
+
+#Now we have 2 tables retail_stage.order_items and retail_stage.orders
+#We need to join these 2 and populate retail_ods.order_items table which have additional columns
+#order_item_order_date and order_month
+#Also table is partitioned by order_month
+insert overwrite table order_items partition (order_month)
+select oi.order_item_id, oi.order_item_order_id, o.order_date,
+oi.order_item_product_id, oi.order_item_quantity, oi.order_item_subtotal,
+oi.order_item_product_price, substr(o.order_date, 1, 7)
+order_month from retail_stage.order_items oi join retail_stage.orders_stage o
+on oi.order_item_order_id = o.order_id;
+ 

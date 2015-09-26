@@ -1,0 +1,132 @@
+sqoop list-databases \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306" \
+  --username retail_dba \
+  --password hadoop
+
+sqoop list-tables \ 
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username retail_dba \
+  --password hadoop
+
+sqoop eval \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username retail_dba \
+  --password hadoop \
+  --query "select count(1) from order_items"
+
+-- Reference: http://www.cloudera.com/content/cloudera/en/developers/home/developer-admin-resources/get-started-with-hadoop-tutorial/exercise-1.html
+sqoop import-all-tables \
+  -m 12 \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --as-avrodatafile \
+  --warehouse-dir=/apps/hive/warehouse/retail_stage.db
+
+sudo -u hdfs hadoop fs -mkdir /user/root/retail_stage
+sudo -u hdfs hadoop fs -chmod +rw /user/root/retail_stage
+hadoop fs -copyFromLocal ~/*.avsc /user/root/retail_stage
+
+-- Basic import
+sqoop import \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --table departments \
+  --target-dir /user/root/departments 
+
+-- Copying into existing table or directory (append)
+-- Customizing number of threads (num-mappers)
+-- Changing delimiter
+sqoop import \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --table departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
+  --append \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --num-mappers 1 \
+  --outdir java_files
+
+-- Importing table with out primary key using multiple threads (split-by)
+-- When using split-by, using indexed column is highly desired
+-- If the column is not indexed then performance will be bad 
+-- because of full table scan by each of the thread
+sqoop import \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --table departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
+  --append \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --split-by department_id \
+  --outdir java_files
+
+-- Getting delta (--where)
+sqoop import \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --table departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
+  --append \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --split-by department_id \
+  --where "department_id > 7" \
+  --outdir java_files
+
+-- Hive related
+-- Overwrite existing data associated with hive table (hive-overwrite)
+sqoop import \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --table departments \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --hive-home /apps/hive/warehouse/retail_ods.db \
+  --hive-import \
+  --hive-overwrite \
+  --hive-table departments \
+  --outdir java_files
+
+--Create hive table example
+sqoop import \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --table departments \
+  --fields-terminated-by '|' \
+  --lines-terminated-by '\n' \
+  --hive-home /apps/hive/warehouse \
+  --hive-import \
+  --hive-table departments_test \
+  --create-hive-table \
+  --outdir java_files
+
+--Connect to mysql and create database for reporting database
+--user:root, password:cloudera
+mysql -u root -p
+create database retail_rpt_db;
+grant all on retail_rpt_db.* to retail_dba;
+flush privileges;
+use retail_rpt_db;
+create table departments as select * from retail_db.departments where 1=2;
+exit;
+
+sqoop export --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_rpt_db" \
+       --username retail_dba \
+       --password hadoop \
+       --table departments \
+       --export-dir /apps/hive/warehouse/retail_ods.db/departments \
+       --input-fields-terminated-by '|' \
+       --input-lines-terminated-by '\n' \
+       --num-mappers 2 \
+       --batch \
+       --outdir java_files
+

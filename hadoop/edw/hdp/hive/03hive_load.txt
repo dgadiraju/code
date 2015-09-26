@@ -1,0 +1,39 @@
+########Copy data from MySQL to local file system
+#Enable file_priv to retail_dba
+mysql -u root -p #if password enabled, else "mysql -u root"
+update mysql.user set file_priv = 'Y' where user = 'retail_dba';
+commit;
+exit;
+#On OS prompt, run
+service mysqld restart
+mysql -u retail_dba -p #prompts for password and launches mysql CLI
+use retail_db;
+#Make sure you understand table structure, delimiter, partition etc, run mysql export command
+select * from categories into outfile '/tmp/categories01.psv' fields terminated by '|' lines terminated by '\n';
+select * from customers into outfile '/tmp/customers.psv' fields terminated by '|' lines terminated by '\n';
+select * from departments into outfile '/tmp/departments.psv' fields terminated by '|' lines terminated by '\n';
+select * from products into outfile '/tmp/products.psv' fields terminated by '|' lines terminated by '\n';
+#We cannot use orders and order_items directly as tables in hive database retail_ods are partitioned
+
+########Load data from local file system to hive table
+load data local inpath '/tmp/categories01.psv' overwrite into table categories;
+load data local inpath '/tmp/customers.psv' overwrite into table customers;
+load data local inpath '/tmp/departments.psv' overwrite into table departments;
+load data local inpath '/tmp/products.psv' overwrite into table products;
+#You can remove overwrite while appending data to underlying hive table
+
+########Load data from HDFS to hive table
+#Prepare HDFS stage directory
+#On command prompt (if you login as root)
+hadoop fs -mkdir /user/root/departments
+hadoop fs -put /tmp/departments.psv /user/root/departments
+hadoop fs -ls /user/root/departments
+#Launch hive
+hive
+use retail_ods;
+load data inpath '/user/root/departments/*' overwrite into table departments;
+hadoop fs -ls /user/root/departments
+#You will not find files
+
+
+

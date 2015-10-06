@@ -21,10 +21,10 @@ public class GettingStarted {
 	public static void main(String[] args) throws Exception {
 		conf.set("hbase.zookeeper.quorum", "hadoop271.itversity.com");
 		conf.set("hbase.zookeeper.property.clientPort", "2181");
-
+		
 		Connection connection = ConnectionFactory.createConnection(conf);
 		Table table = connection.getTable(TableName.valueOf("demo"));
-
+		
 		Scan scan1 = new Scan();
 		ResultScanner scanner1 = table.getScanner(scan1);
 
@@ -73,6 +73,9 @@ public class GettingStarted {
 		}
 
 		scanner1.close();
+		table.close();
+		connection.close();
+
 	}
 
 }

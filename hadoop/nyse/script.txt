@@ -40,6 +40,10 @@ LOCATION '/user/admin/dam/stock_eod';
 #Then function name datetranslate
 #class name analytics.nyse.hive.udfs.DateTranslate
 
+#In case you want to add using commandline interface
+add jar /home/ec2-user/nyse-0.0.1-SNAPSHOT.jar;
+create temporary function datetranslate as 'analytics.nyse.hive.udfs.DateTranslate';
+
 #Once function is created, you can run below query
 create table stock_volume_per_month 
 row format delimited fields terminated by '|' 

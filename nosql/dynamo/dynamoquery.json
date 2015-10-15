@@ -1,0 +1,18 @@
+{
+    "stockTicker": {
+        "AttributeValueList": [
+            {   
+                "S": "A"
+            }   
+        ],  
+        "ComparisonOperator": "EQ"
+    },  
+    "tradeDate": {
+        "AttributeValueList": [
+            {   
+                "S": "01-Jan-2009"
+            }   
+        ],  
+        "ComparisonOperator": "EQ"
+    }
+}

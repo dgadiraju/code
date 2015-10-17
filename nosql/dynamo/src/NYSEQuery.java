@@ -110,11 +110,18 @@ public class NYSEQuery {
 			}
 
 			// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html
+			// select stockTicker, tradeDate, v from stock_eod 
+			// where stockTicker = 'LEA' and tradeDate between '02-Oct-2013' and '03-Oct-2013'
 			QuerySpec spec = new QuerySpec().withProjectionExpression("stockTicker,tradeDate,v")
-					.withKeyConditionExpression("stockTicker = :v_st").withFilterExpression("contains(tradeDate, :v_t)")
-					.withValueMap(new ValueMap().withString(":v_st", "LEA")
+					.withKeyConditionExpression("stockTicker = :v_st and tradeDate between :v_sd and :v_ed")
+//					.withFilterExpression("contains(tradeDate, :v_t)")
+					.withValueMap(new ValueMap()
+										.withString(":v_st", "LEA")
+										.withString(":v_sd", "02-Oct-2013")
+										.withString(":v_ed", "03-Oct-2013")
 							// .withString(":v_td", "01-Oct-2013")
-							.withString(":v_t", "Oct"))
+//							.withString(":v_t", "Oct")
+							)
 					.withConsistentRead(true);
 
 			ItemCollection<QueryOutcome> items = table.query(spec);

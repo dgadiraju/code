@@ -67,3 +67,30 @@ aws dynamodb scan \
     --region us-east-1 \
     --endpoint-url http://dynamo.itversity.com:8000
 
+-- select * from stock_eod limit 10;
+-- select * from stock_eod where rownum <= 10;
+aws dynamodb scan     --table-name stock_eod     --region us-east-1     --limit 10 --endpoint-url http://dynamo.itversity.com:8000
+
+-- select count(1) from stock_eod;
+aws dynamodb scan     --table-name stock_eod     --region us-east-1     --select COUNT --endpoint-url http://dynamo.itversity.com:8000
+
+-- stockTicker, tradeDate, lp, op, cp, hp, v
+aws dynamodb scan \
+     --table-name stock_eod \
+     --region us-east-1 \
+     --select SPECIFIC_ATTRIBUTES \
+     --attributes-to-get "v" \
+     --limit 10 \
+     --endpoint-url http://dynamo.itversity.com:8000
+
+-- select tradeDate, stockTicker, v from stock_eod limit 10;
+aws dynamodb scan \
+     --table-name stock_eod \
+     --region us-east-1 \
+     --select SPECIFIC_ATTRIBUTES \
+     --projection-expression "tradeDate,stockTicker,v" \
+     --limit 10 \
+     --endpoint-url http://dynamo.itversity.com:8000
+
+-- drop table stock_eod;
+aws dynamodb delete-table     --table-name stock_eod    --region us-east-1     --endpoint-url http://dynamo.itversity.com:8000

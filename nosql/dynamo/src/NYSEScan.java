@@ -110,14 +110,19 @@ public class NYSEScan {
 			} else {
 				table = dynamo.getTable(tableName);
 			}
-
+			// select * from stock_eod where stockTicker = 'HCA' and v > 1000000;
 			// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html
 			Map<String, AttributeValue> expressionAttributeValues = new HashMap<String, AttributeValue>();
 			expressionAttributeValues.put(":val", new AttributeValue().withN("1000000"));
+			
+			//Below is not recommended as stockTicker is part of the key
+			expressionAttributeValues.put(":st", new AttributeValue().withS("HCA"));
 
-			ScanRequest scanRequest = new ScanRequest().withTableName(tableName)
-					.withFilterExpression("v > :val")
-					.withProjectionExpression("stockTicker,tradeDate")
+			ScanRequest scanRequest = new ScanRequest()
+					.withTableName(tableName)
+					.withFilterExpression("v > :val and stockTicker = :st")
+					// select stockTicker, tradeDate, v from stock_eod where stockTicker = 'HCA' and v > 1000000;
+					.withProjectionExpression("stockTicker,tradeDate,v")
 					.withExpressionAttributeValues(expressionAttributeValues);
 
 			ScanResult result = dynamoDB.scan(scanRequest);

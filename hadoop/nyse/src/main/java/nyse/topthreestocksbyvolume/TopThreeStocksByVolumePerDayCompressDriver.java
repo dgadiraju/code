@@ -1,5 +1,6 @@
 package nyse.topthreestocksbyvolume;
 
+import java.io.PrintStream;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
@@ -16,6 +17,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -30,6 +32,9 @@ public class TopThreeStocksByVolumePerDayCompressDriver extends Configured imple
 	public int run(String[] arg0) throws Exception {
 		Configuration conf = getConf();
 		
+		GenericOptionsParser parser = new GenericOptionsParser(conf, arg0);
+		String[] args = parser.getRemainingArgs();
+		
 		conf.setBoolean("mapreduce.compress.map.output", true);
 		conf.setClass("mapreduce.map.output.compress.codec", 
 				SnappyCodec.class, CompressionCodec.class);
@@ -38,8 +43,8 @@ public class TopThreeStocksByVolumePerDayCompressDriver extends Configured imple
 		
 		job.setJarByClass(getClass());
 		
-		FileSystem fs = FileSystem.get(URI.create(arg0[0]), conf);
-		Path path = new Path(arg0[0] + arg0[1]); //arg0[1] NYSE_201[2-3]
+		FileSystem fs = FileSystem.get(URI.create(args[0]), conf);
+		Path path = new Path(args[0] + args[1]); //arg0[1] NYSE_201[2-3]
 		
 		FileStatus[] status = fs.globStatus(path);
 		Path[] paths = FileUtil.stat2Paths(status);
@@ -63,7 +68,7 @@ public class TopThreeStocksByVolumePerDayCompressDriver extends Configured imple
 		job.setOutputKeyClass(NullWritable.class);
 		job.setOutputValueClass(Text.class);
 		
-		FileOutputFormat.setOutputPath(job, new Path(arg0[2]));
+		FileOutputFormat.setOutputPath(job, new Path(args[2]));
 		FileOutputFormat.setCompressOutput(job, true);
 		FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
 

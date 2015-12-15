@@ -23,6 +23,20 @@ sqoop import-all-tables \
   --as-avrodatafile \
   --warehouse-dir=/user/hive/warehouse/retail_stage.db
 
+-- It will create tables in default database in hive
+-- Using snappy compression
+sqoop import-all-tables \
+  --num-mappers 1 \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --hive-import \
+  --hive-overwrite \
+  --create-hive-table \
+  --compress \
+  --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+  --outdir java_files
+
 sudo -u hdfs hadoop fs -mkdir /user/cloudera/retail_stage
 sudo -u hdfs hadoop fs -chmod +rw /user/cloudera/retail_stage
 hadoop fs -copyFromLocal ~/*.avsc /user/cloudera/retail_stage

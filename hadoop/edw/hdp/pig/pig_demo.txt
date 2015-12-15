@@ -1,0 +1,96 @@
+-- Setting configuration at run time
+set io.sort.mb 256M;
+
+-- lca count - COUNT_STAR is built-in UDF, check docs for list of built-in UDFs
+-- select count(1) from lca.lca_details_text_delimited;
+department_rows = LOAD '/apps/hive/warehouse/retail_ods.db/departments' ;
+department_group = GROUP department_rows ALL;
+department_count = FOREACH department_group GENERATE COUNT_STAR(department_rows) as ct;
+DUMP department_count;
+
+-- lca count - Using HCatalog, this can be used to use hive structures/metadata
+-- Launch pig using pig -useHCatalog
+pig -useHCatalog
+department_rows = LOAD 'retail_stage.departments' USING org.apache.hive.hcatalog.pig.HCatLoader();
+department_group = GROUP department_rows ALL;
+department_count = FOREACH department_group GENERATE COUNT_STAR(department_rows) as ct;
+DUMP department_count;
+
+—- select LCA_CASE_NUMBER from lca.lca_details_text_delimited limit 10;
+—- select LCA_CASE_NUMBER from lca.lca_details_text_delimited where rownum <= 10;
+
+pig -useHCatalog
+lca_rows = LOAD 'lcaods.lca_details_text_delimited' USING org.apache.hcatalog.pig.HCatLoader();
+lca_limit = LIMIT lca_rows 10;
+lca_by_position = FOREACH lca_limit GENERATE $0, STATUS;
+DUMP lca_by_position;
+STORE lca_rows INTO 'lca.lca_details_text_delimited_temp' USING org.apache.hcatalog.pig.HCatStorer();
+
+-- lca group by state
+-- select LCA_CASE_EMPLOYER_STATE, count(1) from lca_details_text_delimited group by LCA_CASE_EMPLOYER_STATE;
+lca_rows = LOAD '/user/hive/warehouse/lca.db/lca_details_text_delimited' using PigStorage('|') AS (LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+lca_group_by_state = GROUP lca_rows BY LCA_CASE_EMPLOYER_STATE;
+lca_stage_count = FOREACH lca_group_by_state GENERATE group, COUNT(lca_rows);
+DUMP lca_stage_count;
+
+-- lca count for tx using piggybank
+REGISTER /opt/cloudera/parcels/CDH-4.5.0-1.cdh4.5.0.p0.30/lib/pig/piggybank.jar;
+lca_rows = LOAD '/user/hive/warehouse/lcaods.db/lca_details_text_delimited' using PigStorage('|') AS (LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,
+LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,
+LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,
+OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+lca_rows_tx = FILTER lca_rows BY org.apache.pig.piggybank.evaluation.string.LOWER(LCA_CASE_EMPLOYER_STATE) == 'tx';
+lca_group = GROUP lca_rows_tx ALL;
+lca_count = FOREACH lca_group GENERATE COUNT_STAR(lca_rows_tx) as ct;
+DUMP lca_count;
+
+-- lca join to get state full name, use parallel to control number of reducers
+-- select s.STATE_FULL_NAME, count(1) from lca.lca_details_text_delimited l join lca.states s on l.LCA_CASE_EMPLOYER_STATE = s.STATE_SHORT_NAME group by s.STATE_FULL_NAME;
+lca_rows = LOAD '/user/hive/warehouse/lca.db/lca_details_text_delimited' using PigStorage('|') AS (LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+state_rows = LOAD '/user/hive/warehouse/lca.db/states' using PigStorage(',') AS (STATE_SHORT_NAME, STATE_FULL_NAME);
+lca_state_join = JOIN lca_rows BY LCA_CASE_EMPLOYER_STATE, state_rows BY STATE_SHORT_NAME;
+-- Use parallel to control number of reducers
+-- lca_state_join = JOIN lca_rows BY LCA_CASE_EMPLOYER_STATE, state_rows BY STATE_SHORT_NAME PARALLEL 2;
+-- Use USING 'replicated' for map side join - it uses distributed cache concept
+-- lca_state_join = JOIN lca_rows BY LCA_CASE_EMPLOYER_STATE, state_rows BY STATE_SHORT_NAME USING 'replicated';
+lca_group_by_state = GROUP lca_state_join BY STATE_FULL_NAME;
+lca_state_count = FOREACH lca_group_by_state GENERATE group, COUNT(lca_state_join);
+DUMP lca_state_count;
+
+-- lca join to get state full name and order by state full name
+-- select s.STATE_FULL_NAME, count(1) from lca.lca_details_text_delimited l join lca.states s on l.LCA_CASE_EMPLOYER_STATE = s.STATE_SHORT_NAME group by s.STATE_FULL_NAME order by s.state_full_name;
+lca_rows = LOAD '/user/hive/warehouse/lcaods.db/lca_details_text_delimited' using PigStorage('|') AS (LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+state_rows = LOAD '/user/hive/warehouse/lcaods.db/states' using PigStorage(',') AS (STATE_SHORT_NAME, STATE_FULL_NAME);
+lca_rows_filtered = FILTER lca_rows BY LCA_CASE_EMPLOYER_STATE IN ('TX', 'CA’); 
+lca_state_join = JOIN lca_rows_filtered BY LCA_CASE_EMPLOYER_STATE, state_rows BY STATE_SHORT_NAME;
+lca_group_by_state = GROUP lca_state_join BY STATE_FULL_NAME PARALLEL 2;
+lca_state_count = FOREACH lca_group_by_state GENERATE group AS STATE_FULL_NAME, COUNT(lca_state_join) AS lca_count;
+lca_sort = ORDER lca_state_count BY STATE_FULL_NAME;
+DUMP lca_sort;
+
+-- count of rows with valid state name (2 characters)  using regular expression (matches)
+-- follows java regex
+lca_rows = LOAD '/user/hive/warehouse/lca.db/lca_details_text_delimited' using PigStorage('|') AS (LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+lca_filter = FILTER lca_rows BY (LCA_CASE_EMPLOYER_STATE matches '.{2}');
+lca_group = GROUP lca_filter ALL;
+lca_count = FOREACH lca_group GENERATE COUNT_STAR(lca_filter) AS ct;
+DUMP lca_count;
+
+-- UDF
+register '/home/hduser/demo/pig/lca_pig.jar'
+lca_rows = LOAD '/user/hive/warehouse/lca.db/lca_details_text_delimited' using PigStorage('|') AS (LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+lca_case_submit_group = GROUP lca_rows BY SUBSTRING(lca.lca_to_date(LCA_CASE_SUBMIT), 0, 4);
+lca_stage_count = FOREACH lca_case_submit_group GENERATE group, COUNT(lca_rows);
+DUMP lca_stage_count;
+STORE lca_stage_count INTO '/user/hduser/output/lca' USING PigStorage ('|');
+
+-- Static Java functions - can invoke any public static functions (eg: java.lang.Integer.toHexString)
+register '/home/hduser/demo/pig/lca_pig.jar'
+DEFINE ltd InvokeForString('lca.lca_to_date.lca_to_date', 'String');
+lca_rows = LOAD '/user/hive/warehouse/lcaods.db/lca_details_text_delimited' using
+PigStorage('|') AS
+(LCA_CASE_NUMBER,STATUS,LCA_CASE_SUBMIT,DECISION_DATE,VISA_CLASS,LCA_CASE_EMPLOYMENT_START_DATE,LCA_CASE_EMPLOYMENT_END_DATE,LCA_CASE_EMPLOYER_NAME,LCA_CASE_EMPLOYER_ADDRESS,LCA_CASE_EMPLOYER_CITY,LCA_CASE_EMPLOYER_STATE,LCA_CASE_EMPLOYER_POSTAL_CODE,LCA_CASE_SOC_CODE,LCA_CASE_SOC_NAME,LCA_CASE_JOB_TITLE,LCA_CASE_WAGE_RATE_FROM,LCA_CASE_WAGE_RATE_TO,LCA_CASE_WAGE_RATE_UNIT,FULL_TIME_POS,TOTAL_WORKERS,LCA_CASE_WORKLOC1_CITY,LCA_CASE_WORKLOC1_STATE,PW_1,PW_UNIT_1,PW_SOURCE_1,OTHER_WAGE_SOURCE_1,YR_SOURCE_PUB_1,LCA_CASE_WORKLOC2_CITY,LCA_CASE_WORKLOC2_STATE,PW_2,PW_UNIT_2,PW_SOURCE_2,OTHER_WAGE_SOURCE_2,YR_SOURCE_PUB_2,LCA_CASE_NAICS_CODE);
+lca_case_submit_group = GROUP lca_rows BY SUBSTRING(ltd((chararray) LCA_CASE_SUBMIT), 0, 4);
+lca_stage_count = FOREACH lca_case_submit_group GENERATE group, COUNT(lca_rows);
+DUMP lca_stage_count;
+

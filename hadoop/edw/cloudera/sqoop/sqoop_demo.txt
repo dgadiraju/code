@@ -201,3 +201,13 @@ sqoop export --connect "jdbc:mysql://quickstart.cloudera:3306/retail_rpt_db" \
        --batch \
        --outdir java_files
 
+sqoop export --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --table departments \
+  --export-dir /user/cloudera/sqoop_import/departments_export \
+  --batch \
+  --outdir java_files \
+  -m 1 \
+  --update-key department_id \
+  --update-mode allowinsert

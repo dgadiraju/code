@@ -23,6 +23,44 @@ sqoop import-all-tables \
   --as-avrodatafile \
   --warehouse-dir=/user/hive/warehouse/retail_stage.db
 
+--Default
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --as-textfile \
+  --warehouse-dir=/user/cloudera/departments
+
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --as-sequencefile \
+  --warehouse-dir=/user/cloudera/departments
+
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --as-avrodatafile \
+  --warehouse-dir=/user/cloudera/departments
+
+-- A file with extension avsc will be created under the directory from which sqoop import is executed
+-- Copy avsc file to HDFS location
+-- Create hive table with LOCATION to /user/cloudera/departments and TBLPROPERTIES pointing to avsc file
+hadoop fs -put sqoop_import_departments.avsc /user/cloudera
+
+CREATE EXTERNAL TABLE departments
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 'hdfs:///user/cloudera/departments'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/departments.avsc');
+
+
 -- It will create tables in default database in hive
 -- Using snappy compression
 sqoop import-all-tables \

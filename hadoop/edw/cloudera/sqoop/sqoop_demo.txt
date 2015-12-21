@@ -264,3 +264,70 @@ sqoop export --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
   --input-null-string nvl \
   --input-null-non-string -1
 
+--Merge process begins
+hadoop fs -mkdir /user/cloudera/sqoop_merge
+
+--Initial load
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --as-textfile \
+  --target-dir=/user/cloudera/sqoop_merge/departments
+
+--Validate
+sqoop eval --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --query "select * from departments" 
+
+hadoop fs -cat /user/cloudera/sqoop_merge/departments/part*
+
+--update
+sqoop eval --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --query "update departments set department_name='Testing Merge' where department_id = 9000"
+
+--Insert
+sqoop eval --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --query "insert into departments values (10000, 'Inserting for merge')"
+
+sqoop eval --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --query "select * from departments"
+
+--New load
+sqoop import \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --table departments \
+  --as-textfile \
+  --target-dir=/user/cloudera/sqoop_merge/departments_delta \
+  --where "department_id >= 9000"
+
+hadoop fs -cat /user/cloudera/sqoop_merge/departments_stage/part*
+
+--Merge
+sqoop merge --merge-key department_id \
+  --new-data /user/cloudera/sqoop_merge/departments_delta \
+  --onto /user/cloudera/sqoop_merge/departments \
+  --target-dir /user/cloudera/sqoop_merge/departments_stage \
+  --class-name departments \
+  --jar-file <get_it_from_last_import>
+
+--Delete old directory
+hadoop fs -rm -R /user/cloudera/sqoop_merge/departments
+
+--Move/rename stage directory to original directory
+hadoop fs -mv /user/cloudera/sqoop_merge/departments_stage /user/cloudera/sqoop_merge/departments 
+
+--Validate that original directory have merged data
+hadoop fs -cat /user/cloudera/sqoop_merge/departments/part*
+
+--Merge process ends

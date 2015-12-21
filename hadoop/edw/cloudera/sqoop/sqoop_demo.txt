@@ -190,6 +190,7 @@ use retail_rpt_db;
 create table departments as select * from retail_db.departments where 1=2;
 exit;
 
+--For certification change database name retail_rpt_db to retail_db
 sqoop export --connect "jdbc:mysql://quickstart.cloudera:3306/retail_rpt_db" \
        --username retail_dba \
        --password cloudera \
@@ -211,3 +212,17 @@ sqoop export --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
   -m 1 \
   --update-key department_id \
   --update-mode allowinsert
+
+sqoop export --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username retail_dba \
+  --password cloudera \
+  --table departments_test \
+  --export-dir /user/hive/warehouse/departments_test \
+  --input-fields-terminated-by '\001' \
+  --input-lines-terminated-by '\n' \
+  --num-mappers 2 \
+  --batch \
+  --outdir java_files \
+  --input-null-string nvl \
+  --input-null-non-string -1
+

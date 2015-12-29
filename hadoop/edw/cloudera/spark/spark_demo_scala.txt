@@ -1,0 +1,173 @@
+#Introduction
+#spark-shell
+#pyspark
+#SparkContext
+#SQLContext
+#HiveContext
+#spark-sql (only latest version)
+#JDBC
+spark-shell --driver-class-path /usr/share/java/mysql-connector-java.jar
+import org.apache.spark.sql.SQLContext
+val url = "jdbc:mysql://quickstart.cloudera:3306/retail_db?user=retail_dba&password=cloudera"
+sqlContext.load("jdbc", Map(
+  "url" -> url,
+  "dbtable" -> "departments")).collect().foreach(println)
+
+#Developing simple scala based applications for spark
+
+##############################################################################
+
+# Load data from HDFS and storing results back to HDFS using Spark
+import org.apache.spark.sql.SQLContext
+import sqlContext.implicits._
+
+val dataRDD = sc.textFile("/user/cloudera/sqoop_import/departments")
+dataRDD.collect().foreach(println)
+dataRDD.count()
+
+dataRDD.saveAsTextFile("/user/cloudera/spark/departments")
+dataRDD.saveAsObjectFile("/user/cloudera/spark/departmentsObject")
+dataRDD.map(x => (x.split(",")(0), x.split(",")(1))).
+        saveAsSequenceFile("/user/cloudera/spark/departmentsSeq", classOf[IntWritable], classOf[Text])
+
+sc.sequenceFile("/user/cloudera/spark/departmentsSeq", classOf[IntWritable], classOf[Text]).map(rec => rec.toString()).collect().foreach(println)
+
+#Validation
+hadoop fs -ls /user/cloudera/spark
+
+hadoop fs -ls /user/cloudera/spark/departments
+
+val sqlContext = new org.apache.spark.sql.hive.HiveContext(sc)
+sqlContext.sql("select * from departments").collect().foreach(println)
+sqlContext.sql("create table departmentsSpark as select * from departments")
+#We can run hive INSERT, LOAD and any valid hive query in Hive context
+
+#Make sure you copy departments.json to HDFS
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+import sqlContext.implicits._
+val departmentsJson = sqlContext.jsonFile("/user/cloudera/spark/departments.json")
+departmentsJson.registerTempTable("departmentsTable")
+val departmentsData = sqlContext.sql("select * from departmentsTable")
+departmentsData.collect().foreach(println)
+
+#Writing data in json format
+departmentsData.toJSON.saveAsTextFile("/user/cloudera/spark/departmentsJson")
+
+#Validating the data
+hadoop fs -cat /user/cloudera/departmentsJson/part*
+
+##############################################################################
+
+# Join disparate datasets together using Spark
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+
+val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
+val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
+
+val ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
+val joinData = ordersJoinOrderItems.
+  map(t => (t._2._1.split(",")(1), t._2._2.split(",")(4).toFloat))
+val ordersAggRDD = joinData.
+    aggregateByKey((0.0,0))(
+      (subtotal1, subtotal2) => (subtotal1._1+subtotal2, subtotal1._2+1),
+      (total1, total2) => (total1._1+total2._1, total1._2+total2._2)
+    )
+ordersAggRDD.collect().foreach(println)
+
+##############################################################################
+
+# Calculate aggregate statistics (e.g., average or sum) using Spark
+#sum
+#Number of orders by status
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+ordersRDD.map(rec => (rec.split(",")(3), 1)).reduceByKey(_ + _).collect().foreach(println)
+
+#Number of orders by order date and order status
+#Key orderDate and orderStatus
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val ordersMapRDD = ordersRDD.map(rec => ((rec.split(",")(1), rec.split(",")(3)), 1))
+ordersMapRDD.reduceByKey((v1, v2) => v1+v2).sortByKey().collect().foreach(println)
+
+#average
+#average revenue per order per day
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+
+val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
+val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
+
+val ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
+val joinData = ordersJoinOrderItems.
+  map(t => (t._2._1.split(",")(1), t._2._2.split(",")(4).toFloat))
+val ordersAggRDD = joinData.
+    reduceByKey(
+      (subtotal1, subtotal2) => subtotal1+subtotal2
+    )
+ordersAggRDD.collect().foreach(println)
+
+val ordersPerDayRDD = ordersRDD.
+    map(rec => (rec.split(",")(1), 1)).
+    reduceByKey((subtotal1, subtotal2) => subtotal1+subtotal2)
+ordersPerDayRDD.collect().foreach(println)
+
+val ordersAvgJoinData = ordersAggRDD.join(ordersPerDayRDD)
+ordersAvgJoinData.map(t => (t._1, t._2._1/t._2._2)).sortByKey().collect().foreach(println)
+
+##########################################################################################
+
+# Using data frames
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+import sqlContext.implicits._
+sqlContext.sql("set spark.sql.shuffle.partitions=10");
+
+case class Orders(orderId: Int, orderDate: String, orderCustomerId: Int, orderStatus: String)
+
+val orders = sc.textFile("/user/cloudera/sqoop_import/orders").
+  map(rec => rec.split(",")).
+  map(o => Orders(o(0).toInt, o(1), o(2).toInt, o(3))).toDF()
+
+orders.registerTempTable("orders")
+val ordersData = sqlContext.sql("select * from orders")
+ordersData.collect().take(10).foreach(println)
+
+case class OrderItems
+  (orderItemId: Int, 
+   orderItemOrderId: Int, 
+   orderItemProductId: Int, 
+   orderItemQuantity: Int, 
+   orderItemSubtotal: Float, 
+   orderItemProductPrice: Float
+  )
+
+val orderItems = sc.textFile("/user/cloudera/sqoop_import/order_items").
+  map(rec => rec.split(",")).
+  map(oi => OrderItems(oi(0).toInt, oi(1).toInt, oi(2).toInt, oi(3).toInt, oi(4).toFloat, oi(5).toFloat)).
+  toDF()
+
+orderItems.registerTempTable("orderItems")
+val orderItemsData = sqlContext.sql("select * from orderItems")
+orderItemsData.collect().take(10).foreach(println)
+
+val ordersJoinOrderItems = sqlContext.sql("select o.orderDate, sum(oi.orderItemSubtotal), count(o.orderId) from orders o join orderItems oi on o.orderId = oi.orderItemOrderId group by o.orderDate")
+val ordersJoinOrderItems = sqlContext.sql("select o.orderDate, sum(oi.orderItemSubtotal), count(distinct o.orderId), sum(oi.orderItemSubtotal)/count(distinct o.orderId) from orders o join orderItems oi on o.orderId = oi.orderItemOrderId group by o.orderDate order by o.orderDate")
+ordersJoinOrderItems.collect().take(10).foreach(println)
+
+##########################################################
+
+# Filter data into a smaller dataset using Spark
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+ordersRDD.filter(line => line.split(",")(3).equals("COMPLETE")).take(5).foreach(println)
+ordersRDD.filter(line => line.split(",")(3).contains("PENDING")).take(5).foreach(println)
+ordersRDD.filter(line => line.split(",")(0).toInt > 100).take(5).foreach(println)
+ordersRDD.filter(line => line.split(",")(0).toInt > 100 || line.split(",")(3).contains("PENDING")).take(5).foreach(println)
+ordersRDD.filter(line => line.split(",")(0).toInt > 1000 && 
+    (line.split(",")(3).contains("PENDING") || line.split(",")(3).equals("CANCELLED"))).
+    take(5).
+    foreach(println)
+ordersRDD.filter(line => line.split(",")(0).toInt > 1000 && 
+    !line.split(",")(3).equals("COMPLETE")).
+    take(5).
+    foreach(println)
+
+# Write a query that produces ranked or sorted data using Spark

@@ -311,7 +311,7 @@ sqoop import \
   --target-dir=/user/cloudera/sqoop_merge/departments_delta \
   --where "department_id >= 9000"
 
-hadoop fs -cat /user/cloudera/sqoop_merge/departments_stage/part*
+hadoop fs -cat /user/cloudera/sqoop_merge/departments_delta/part*
 
 --Merge
 sqoop merge --merge-key department_id \
@@ -320,6 +320,8 @@ sqoop merge --merge-key department_id \
   --target-dir /user/cloudera/sqoop_merge/departments_stage \
   --class-name departments \
   --jar-file <get_it_from_last_import>
+
+hadoop fs -cat /user/cloudera/sqoop_merge/departments_stage/part*
 
 --Delete old directory
 hadoop fs -rm -R /user/cloudera/sqoop_merge/departments

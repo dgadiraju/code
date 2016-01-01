@@ -60,9 +60,14 @@ dataRDD.saveAsObjectFile("/user/cloudera/pyspark/departmentsObject")
 #saveAsSequenceFile
 dataRDD.map(lambda x: (None, x)).saveAsSequenceFile("/user/cloudera/pyspark/departmentsSeq")
 dataRDD.map(lambda x: tuple(x.split(",", 1))).saveAsSequenceFile("/user/cloudera/pyspark/departmentsSeq")
+dataRDD.map(lambda x: tuple(x.split(",", 1))).saveAsSequenceFile("/user/cloudera/pyspark/orders")
+path="/user/cloudera/pyspark/departmentsSeq"
+
+dataRDD.map(lambda x: tuple(x.split(",", 1))).saveAsNewAPIHadoopFile(path,"org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",keyClass="org.apache.hadoop.io.Text",valueClass="org.apache.hadoop.io.Text")
 
 #reading sequence file
 data = sc.sequenceFile("/user/cloudera/pyspark/departmentsSeq")
+data = sc.sequenceFile("/user/cloudera/pyspark/orders")
 data = sc.sequenceFile("/user/cloudera/pyspark/departmentsSeq", "org.apache.hadoop.io.IntWritable", "org.apache.hadoop.io.Text")
 for rec in data.collect():
   print(rec)
@@ -81,6 +86,19 @@ for rec in depts.collect():
 #We can run hive INSERT, LOAD and any valid hive query in Hive context
 
 #Make sure you copy departments.json to HDFS
+#create departments.json on Linux file system
+{"department_id":2, "department_name":"Fitness"}
+{"department_id":3, "department_name":"Footwear"}
+{"department_id":4, "department_name":"Apparel"}
+{"department_id":5, "department_name":"Golf"}
+{"department_id":6, "department_name":"Outdoors"}
+{"department_id":7, "department_name":"Fan Shop"}
+{"department_id":8, "department_name":"TESTING"}
+{"department_id":8000, "department_name":"TESTING"}
+
+#copying to HDFS (using linux command line)
+hadoop fs -put departments.json /user/cloudera/pyspark
+
 from pyspark import SQLContext
 sqlContext = SQLContext(sc)
 departmentsJson = sqlContext.jsonFile("/user/cloudera/pyspark/departments.json")
@@ -98,64 +116,77 @@ hadoop fs -cat /user/cloudera/pyspark/departmentsJson/part*
 ##############################################################################
 
 # Join disparate datasets together using Spark
-val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+# Problem statement, get the revenue and number of orders on daily basis
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
-val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
-val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
+ordersParsedRDD = ordersRDD.map(lambda rec: (rec.split(",")[0], rec))
+orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
 
-val ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
-val joinData = ordersJoinOrderItems.
-  map(t => (t._2._1.split(",")(1), t._2._2.split(",")(4).toFloat))
-val ordersAggRDD = joinData.
-    aggregateByKey((0.0,0))(
-      (subtotal1, subtotal2) => (subtotal1._1+subtotal2, subtotal1._2+1),
-      (total1, total2) => (total1._1+total2._1, total1._2+total2._2)
-    )
-ordersAggRDD.collect().foreach(println)
+ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
+joinData = ordersJoinOrderItems.map(lambda t: (t[1][0].split(",")[1], float(t[1][1].split(",")[4])))
+
+ordersAggRDD = joinData.aggregateByKey( \
+(0, 0), \
+lambda subtotal1, subtotal2: (subtotal1[0] + subtotal2, subtotal1[1] + 1), \
+lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
+)
+
+for data in ordersAggRDD.collect():
+  print(data)
 
 ##############################################################################
 
 # Calculate aggregate statistics (e.g., average or sum) using Spark
 #sum
 #Number of orders by status
-val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-ordersRDD.map(rec => (rec.split(",")(3), 1)).reduceByKey(_ + _).collect().foreach(println)
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], 1))
+ordersByStatus = ordersMap.reduceByKey(lambda x,y: x + y)
+
+for recs in ordersByStatus.collect():
+  print(recs)
+
+for recs in ordersRDD.map(lambda rec:  (rec.split(",")[3], 1)).reduceByKey(lambda x,y: x + y).collect():
+  print(recs)
 
 #Number of orders by order date and order status
 #Key orderDate and orderStatus
-val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-val ordersMapRDD = ordersRDD.map(rec => ((rec.split(",")(1), rec.split(",")(3)), 1))
-ordersMapRDD.reduceByKey((v1, v2) => v1+v2).sortByKey().collect().foreach(println)
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+ordersMapRDD = ordersRDD.map(lambda rec: ((rec.split(",")[1], rec.split(",")[3]), 1))
+ordersMapRDD.reduceByKey(lambda v1, v2: v1+v2).sortByKey().collect().foreach(println)
 
 #average
 #average revenue per order per day
-val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
-val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
-val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
+ordersParsedRDD = ordersRDD.map(lambda rec: (rec.split(",")[0], rec))
+orderItemsParsedRDD = orderItemsRDD.map(lambdarec: (rec.split(",")[1], rec))
 
-val ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
-val joinData = ordersJoinOrderItems.
-  map(t => (t._2._1.split(",")(1), t._2._2.split(",")(4).toFloat))
-val ordersAggRDD = joinData.
-    reduceByKey(
-      (subtotal1, subtotal2) => subtotal1+subtotal2
-    )
-ordersAggRDD.collect().foreach(println)
+ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
+joinData = ordersJoinOrderItems.map(lambda t: (t[1][0].split(",")[1], float(t[1][1].split(",")[4])))
 
-val ordersPerDayRDD = ordersRDD.
-    map(rec => (rec.split(",")(1), 1)).
-    reduceByKey((subtotal1, subtotal2) => subtotal1+subtotal2)
-ordersPerDayRDD.collect().foreach(println)
+ordersAggRDD = joinData.reduceByKey( \
+lambda total1, total2: total1 + total2 \
+)
 
-val ordersAvgJoinData = ordersAggRDD.join(ordersPerDayRDD)
-ordersAvgJoinData.map(t => (t._1, t._2._1/t._2._2)).sortByKey().collect().foreach(println)
+for data in ordersAggRDD.collect():
+  print(data)
+
+ordersPerDayRDD = ordersRDD.
+    map(lambda rec: (rec.split(",")[1], 1)).
+    reduceByKey(lambda subtotal1, subtotal2: subtotal1+subtotal2)
+for data in ordersPerDayRDD.collect():
+  print(data)
+
+ordersAvgJoinData = ordersAggRDD.join(ordersPerDayRDD)
+for data in ordersAvgJoinData.map(t => (t[0], t[1][0]/t[1][1])).sortByKey().collect():
+  print data
 
 ##########################################################################################
 
-# Using data frames
+# Using data frames (only works with spark 1.3.0 or later)
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 import sqlContext.implicits._
 sqlContext.sql("set spark.sql.shuffle.partitions=10");

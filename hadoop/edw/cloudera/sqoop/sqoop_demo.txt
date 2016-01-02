@@ -63,6 +63,23 @@ TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/sqoop
 
 -- It will create tables in default database in hive
 -- Using snappy compression
+-- As we have imported all tables before make sure you drop the directories
+-- Launch hive drop all tables
+drop table departments;
+drop table categories;
+drop table products;
+drop table orders;
+drop table order_items;
+drop table customers;
+
+-- Dropping directories, in case your hive database/tables in consistent state
+hadoop fs -rm -R /user/hive/warehouse/departments
+hadoop fs -rm -R /user/hive/warehouse/categories
+hadoop fs -rm -R /user/hive/warehouse/products
+hadoop fs -rm -R /user/hive/warehouse/orders 
+hadoop fs -rm -R /user/hive/warehouse/order_itmes
+hadoop fs -rm -R /user/hive/warehouse/customers
+
 sqoop import-all-tables \
   --num-mappers 1 \
   --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \

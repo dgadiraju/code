@@ -204,63 +204,153 @@ for data in joinAggData.collect():
 
 # Calculate aggregate statistics (e.g., average or sum) using Spark
 #sum
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+ordersRDD.count()
+
+orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+orderItemsMap = orderItemsRDD.map(lambda rec: float(rec.split(",")[4]))
+for i in orderItemsMap.take(5):
+  print i
+
+orderItemsReduce = orderItemsMap.reduce(lambda rev1, rev2: rev1 + rev2)
+
+#Get max priced product from products table
+#There is one record which is messing up default , delimiters
+#Clean it up (we will see how we can filter with out deleting the record later)
+hadoop fs -get /user/cloudera/sqoop_import/products
+#Delete the record with product_id 685
+hadoop fs -put -f products/part* /user/cloudera/sqoop_import/products
+
+#pyspark script to get the max priced product
+productsRDD = sc.textFile("/user/cloudera/sqoop_import/products")
+productsMap = productsRDD.map(lambda rec: rec)
+productsMap.reduce(lambda rec1, rec2: (rec1 if((rec1.split(",")[4] != "" and rec2.split(",")[4] != "") and float(rec1.split(",")[4]) >= float(rec2.split(",")[4])) else rec2))
+
+#avg
+revenue = sc.textFile("/user/cloudera/sqoop_import/order_items").map(lambda rec: float(rec.split(",")[4])).reduce(lambda rev1, rev2: rev1 + rev2)
+totalOrders = sc.textFile("/user/cloudera/sqoop_import/order_items").map(lambda rec: int(rec.split(",")[1])).distinct().count()
+
 #Number of orders by status
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
 ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], 1))
+for i in ordersMap.countByKey().items(): print(i)
+#groupByKey is not very efficient
+ordersByStatus = ordersMap.groupByKey().map(lambda t: (t[0], sum(t[1])))
 ordersByStatus = ordersMap.reduceByKey(lambda x,y: x + y)
+ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], rec))
+ordersByStatus = ordersMap.aggregateByKey(0, lambda acc, val: acc+1, lambda acc, val: acc+val)
+ordersByStatus = ordersMap.combineByKey(lambda val: 1, lambda acc, val: acc+1, lambda acc, val: acc+val)
 
 for recs in ordersByStatus.collect():
-  print(recs)
-
-for recs in ordersRDD.map(lambda rec:  (rec.split(",")[3], 1)).reduceByKey(lambda x,y: x + y).collect():
   print(recs)
 
 #Number of orders by order date and order status
 #Key orderDate and orderStatus
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
 ordersMapRDD = ordersRDD.map(lambda rec: ((rec.split(",")[1], rec.split(",")[3]), 1))
-ordersMapRDD.reduceByKey(lambda v1, v2: v1+v2).sortByKey().collect().foreach(println)
+ordersByStatusPerDay = ordersMapRDD.reduceByKey(lambda v1, v2: v1+v2)
+
+for i in ordersByStatusPerDay.collect():
+  print(i)
 
 #average
-#average revenue per order per day
+#average revenue per day
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
 orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
 ordersParsedRDD = ordersRDD.map(lambda rec: (rec.split(",")[0], rec))
-orderItemsParsedRDD = orderItemsRDD.map(lambdarec: (rec.split(",")[1], rec))
+orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
 
-ordersJoinOrderItems = ordersParsedRDD.join(orderItemsParsedRDD)
-joinData = ordersJoinOrderItems.map(lambda t: (t[1][0].split(",")[1], float(t[1][1].split(",")[4])))
+ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
+ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: (t[1][1].split(",")[1] + "," + str(t[0]), float(t[1][0].split(",")[4])))
 
-ordersAggRDD = joinData.reduceByKey( \
-lambda total1, total2: total1 + total2 \
-)
-
-ordersAggRDD = joinData.aggregateByKey( \
-(0, 0), \
-lambda subtotal1, subtotal2: (subtotal1[0] + subtotal2, subtotal1[1] + 1), \
+revenuePerDayPerOrder = ordersJoinOrderItemsMap.combineByKey( \
+lambda x: (x, 1), \
+lambda acc, revenue: (acc[0] + revenue, 1), \
 lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
 )
 
-for data in ordersAggRDD.collect():
+revenuePerDayPerOrder = ordersJoinOrderItemsMap.aggregateByKey( \
+(0, 0), \
+lambda acc, revenue: (acc[0] + revenue, 1), \
+lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
+)
+
+for data in revenuePerDayPerOrder.collect():
   print(data)
 
-ordersPerDayRDD = ordersRDD.
-    map(lambda rec: (rec.split(",")[1], 1)).
-    reduceByKey(lambda subtotal1, subtotal2: subtotal1+subtotal2)
-for data in ordersPerDayRDD.collect():
-  print(data)
+revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(lambda rec: (rec[0].split(",")[0], (rec[1][0], rec[1][1])))
+revenueAndOrdersPerDay = revenuePerDayPerOrderMap.reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1]))
+avgRevenuePerDay = revenueAndOrdersPerDay.map(lambda x: (x[0], x[1][0]/x[1][1]))
 
-ordersAvgJoinData = ordersAggRDD.join(ordersPerDayRDD)
-for data in ordersAvgJoinData.map(t => (t[0], t[1][0]/t[1][1])).sortByKey().collect():
-  print data
+#Customer id with max revenue
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
+ordersParsedRDD = ordersRDD.map(lambda rec: (rec.split(",")[0], rec))
+orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
+
+ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
+ordersPerDayPerCustomer = ordersJoinOrderItems.map(lambda rec: ((rec[1][1].split(",")[1], rec[1][1].split(",")[2]), float(rec[1][0].split(",")[4])))
+revenuePerDayPerCustomer = ordersPerDayPerCustomer.reduceByKey(lambda x, y: x + y)
+revenuePerDayPerCustomerMap = revenuePerDayPerCustomer.map(lambda rec: (rec[0][0], (rec[0][1], rec[1])))
+topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey(lambda x, y: (x if x[1] >= y[1] else y))
+
+#Using regular function
+def findMax(x, y):
+  if(x[1] >= y[1]):
+    return x
+  else:
+    return y
+
+topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey(lambda x, y: findMax(x, y))
 
 # Using Hive Context
 from pyspark.sql import HiveContext
-sqlContext = HiveContext(sc)
+hiveContext = HiveContext(sc)
+hiveContext.sql("set spark.sql.shuffle.partitions=10");
 
-query = "select 
+data = hiveContext.sql(" \
+select * from ( \
+select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal \
+from orders o join order_items oi \
+on o.order_id = oi.order_item_order_id \
+group by o.order_date, o.order_customer_id) q1 \
+join \
+(select q.order_date, max(q.order_item_subtotal) order_item_subtotal \
+from (select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal \
+from orders o join order_items oi \
+on o.order_id = oi.order_item_order_id \
+group by o.order_date, o.order_customer_id) q \
+group by q.order_date) q2 \
+on q1.order_date = q2.order_date and q1.order_item_subtotal = q2.order_item_subtotal \
+order by q1.order_date")
+
+# This query works in hive
+select * from (select q.order_date, q.order_customer_id, q.order_item_subtotal, 
+max(q.order_item_subtotal) over (partition by q.order_date) max_order_item_subtotal 
+from (select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal 
+from orders o join order_items oi 
+on o.order_id = oi.order_item_order_id 
+group by o.order_date, o.order_customer_id) q) s
+where s.order_item_subtotal = s.max_order_item_subtotal
+order by s.order_date;
+
+select * from (
+select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal 
+from orders o join order_items oi 
+on o.order_id = oi.order_item_order_id 
+group by o.order_date, o.order_customer_id) q1
+join
+(select q.order_date, max(q.order_item_subtotal) order_item_subtotal
+from (select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal
+from orders o join order_items oi
+on o.order_id = oi.order_item_order_id
+group by o.order_date, o.order_customer_id) q
+group by q.order_date) q2
+on q1.order_date = q2.order_date and q1.order_item_subtotal = q2.order_item_subtotal
+order by q1.order_date;
+
 ##########################################################################################
 
 # Using data frames (only works with spark 1.3.0 or later)

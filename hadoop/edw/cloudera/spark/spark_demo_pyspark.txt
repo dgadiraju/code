@@ -236,7 +236,7 @@ ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], 1))
 for i in ordersMap.countByKey().items(): print(i)
 #groupByKey is not very efficient
 ordersByStatus = ordersMap.groupByKey().map(lambda t: (t[0], sum(t[1])))
-ordersByStatus = ordersMap.reduceByKey(lambda x,y: x + y)
+ordersByStatus = ordersMap.reduceByKey(lambda acc, val: acc + val)
 ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], rec))
 ordersByStatus = ordersMap.aggregateByKey(0, lambda acc, val: acc+1, lambda acc, val: acc+val)
 ordersByStatus = ordersMap.combineByKey(lambda val: 1, lambda acc, val: acc+1, lambda acc, val: acc+val)
@@ -253,8 +253,7 @@ ordersByStatusPerDay = ordersMapRDD.reduceByKey(lambda v1, v2: v1+v2)
 for i in ordersByStatusPerDay.collect():
   print(i)
 
-#average
-#average revenue per day
+#Total Revenue per day
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
 orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
@@ -262,26 +261,49 @@ ordersParsedRDD = ordersRDD.map(lambda rec: (rec.split(",")[0], rec))
 orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
 
 ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
-ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: (t[1][1].split(",")[1] + "," + str(t[0]), float(t[1][0].split(",")[4])))
+ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: (t[1][1].split(",")[1], float(t[1][0].split(",")[4])))
 
-revenuePerDayPerOrder = ordersJoinOrderItemsMap.combineByKey( \
+revenuePerDay = ordersJoinOrderItemsMap.reduceByKey(lambda acc, val: acc + val)
+for i in revenuePerDay.collect(): print(i)
+
+#average
+#average revenue per day
+#Parse Orders (key order_id)
+#Parse Order items (key order_item_order_id)
+#Join the data sets
+#Parse joined data and get (order_date, order_id) as key  and order_item_subtotal as value
+#Use appropriate aggregate function to get sum(order_item_subtotal) for each order_date, order_id combination
+#Parse data to discard order_id and get order_date as key and sum(order_item_subtotal) per order as value
+#Use appropriate aggregate function to get sum(order_item_subtotal) per day and count(distinct order_id) per day
+#Parse data and apply average logic
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+
+ordersParsedRDD = ordersRDD.map(lambda rec: (rec.split(",")[0], rec))
+orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
+
+ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
+ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: ((t[1][1].split(",")[1], t[0]), float(t[1][0].split(",")[4])))
+
+revenuePerDayPerOrder = ordersJoinOrderItemsMap.reduceByKey(lambda acc, val: acc + val)
+revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(lambda rec: (rec[0][0], rec[1]))
+
+revenuePerDayPerOrder = revenuePerDayPerOrderMap.combineByKey( \
 lambda x: (x, 1), \
-lambda acc, revenue: (acc[0] + revenue, 1), \
+lambda acc, revenue: (acc[0] + revenue, acc[1] + 1), \
 lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
 )
 
-revenuePerDayPerOrder = ordersJoinOrderItemsMap.aggregateByKey( \
+revenuePerDayPerOrder = revenuePerDayPerOrderMap.aggregateByKey( \
 (0, 0), \
-lambda acc, revenue: (acc[0] + revenue, 1), \
+lambda acc, revenue: (acc[0] + revenue, acc[1] + 1), \
 lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
 )
 
 for data in revenuePerDayPerOrder.collect():
   print(data)
 
-revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(lambda rec: (rec[0].split(",")[0], (rec[1][0], rec[1][1])))
-revenueAndOrdersPerDay = revenuePerDayPerOrderMap.reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1]))
-avgRevenuePerDay = revenueAndOrdersPerDay.map(lambda x: (x[0], x[1][0]/x[1][1]))
+avgRevenuePerDay = revenuePerDayPerOrder.map(lambda x: (x[0], x[1][0]/x[1][1]))
 
 #Customer id with max revenue
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
@@ -293,6 +315,7 @@ orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
 ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
 ordersPerDayPerCustomer = ordersJoinOrderItems.map(lambda rec: ((rec[1][1].split(",")[1], rec[1][1].split(",")[2]), float(rec[1][0].split(",")[4])))
 revenuePerDayPerCustomer = ordersPerDayPerCustomer.reduceByKey(lambda x, y: x + y)
+
 revenuePerDayPerCustomerMap = revenuePerDayPerCustomer.map(lambda rec: (rec[0][0], (rec[0][1], rec[1])))
 topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey(lambda x, y: (x if x[1] >= y[1] else y))
 

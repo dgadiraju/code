@@ -417,18 +417,139 @@ ordersJoinOrderItems.collect().take(10).foreach(println)
 ##########################################################
 
 # Filter data into a smaller dataset using Spark
-val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-ordersRDD.filter(line => line.split(",")(3).equals("COMPLETE")).take(5).foreach(println)
-ordersRDD.filter(line => line.split(",")(3).contains("PENDING")).take(5).foreach(println)
-ordersRDD.filter(line => line.split(",")(0).toInt > 100).take(5).foreach(println)
-ordersRDD.filter(line => line.split(",")(0).toInt > 100 || line.split(",")(3).contains("PENDING")).take(5).foreach(println)
-ordersRDD.filter(line => line.split(",")(0).toInt > 1000 && 
-    (line.split(",")(3).contains("PENDING") || line.split(",")(3).equals("CANCELLED"))).
-    take(5).
-    foreach(println)
-ordersRDD.filter(line => line.split(",")(0).toInt > 1000 && 
-    !line.split(",")(3).equals("COMPLETE")).
-    take(5).
-    foreach(println)
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+for i in ordersRDD.filter(lambda line: line.split(",")[3] == "COMPLETE").take(5): print(i)
+
+for i in ordersRDD.filter(lambda line: "PENDING" in line.split(",")[3]).take(5): print(i)
+
+for i in ordersRDD.filter(lambda line: int(line.split(",")[0]) > 100).take(5): print(i)
+ 
+for i in ordersRDD.filter(lambda line: int(line.split(",")[0]) > 100 or line.split(",")[3] in "PENDING").take(5): print(i)
+ 
+for i in ordersRDD.filter(lambda line: int(line.split(",")[0]) > 1000 and ("PENDING" in line.split(",")[3] or line.split(",")[3] == ("CANCELLED"))).take(5): print(i)
+ 
+for i in ordersRDD.filter(lambda line: int(line.split(",")[0]) > 1000 and line.split(",")[3] != ("COMPLETE")).take(5): print(i)
+
+#Check if there are any cancelled orders with amount greater than 1000$
+#Get only cancelled orders
+#Join orders and order items
+#Generate sum(order_item_subtotal) per order
+#Filter data which amount to greater than 1000$
+
+ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+
+ordersParsedRDD = ordersRDD.filter(lambda rec: rec.split(",")[3] in "CANCELED").map(lambda rec: (int(rec.split(",")[0]), rec))
+orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (int(rec.split(",")[1]), float(rec.split(",")[4])))
+orderItemsAgg = orderItemsParsedRDD.reduceByKey(lambda acc, val: (acc + val))
+
+ordersJoinOrderItems = orderItemsAgg.join(ordersParsedRDD)
+
+for i in ordersJoinOrderItems.filter(lambda rec: rec[1][0] >= 1000).take(5): print(i)
+
+##########################################################
 
 # Write a query that produces ranked or sorted data using Spark
+
+#Global sorting and ranking
+orders = sc.textFile("/user/cloudera/sqoop_import/orders")
+for i in orders.map(lambda rec: (int(rec.split(",")[0]), rec)).sortByKey().collect(): print(i)
+for i in orders.map(lambda rec: (int(rec.split(",")[0]), rec)).sortByKey(False).take(5): print(i)
+for i in orders.map(lambda rec: (int(rec.split(",")[0]), rec)).top(5): print(i)
+for i in orders.map(lambda rec: (int(rec.split(",")[0]), rec)).takeOrdered(5, lambda x: x[0]): print(i)
+for i in orders.map(lambda rec: (int(rec.split(",")[0]), rec)).takeOrdered(5, lambda x: -x[0]): print(i)
+for i in orders.takeOrdered(5, lambda x: int(x.split(",")[0])): print(i)
+for i in orders.takeOrdered(5, lambda x: -int(x.split(",")[0])): print(i)
+
+
+#By key sorting and ranking
+def getAllSortByPrice(rec, bool):
+  if(bool == False):
+    x = sorted(rec[1], key = lambda k: -float(k.split(",")[4]))
+  else:
+    x = sorted(rec[1], key = lambda k: float(k.split(",")[4]))
+  return (y for y in x)
+    
+
+def getAll(rec):
+  return (x for x in rec[1])
+
+def getFirstTwo(rec):
+  x = [ ]
+  ctr = 0
+  for i in rec[1]:
+    if(ctr < 2):
+      x.append(i)
+    ctr = ctr + 1
+  return (y for y in x)
+
+def getTop(rec):
+  x = [ ]
+  max = 0
+  for i in rec[1]:
+    prodPrice = float(i.split(",")[4])
+    if(prodPrice > max):
+      max = prodPrice
+  for j in rec[1]:
+    if(float(j.split(",")[4]) == max):
+      x.append(j)
+  return (y for y in x)
+
+products = sc.textFile("/user/cloudera/sqoop_import/products")
+productsMap = products.map(lambda rec: (rec.split(",")[1], rec))
+productsGroupBy = productsMap.groupByKey()
+for i in productsGroupBy.collect(): print(i)
+
+#Get data sorted by product price per category
+#You can use map or flatMap, if you want to see one record per line you need to use flatMap
+#Map will return the list
+for i in productsGroupBy.map(lambda rec: sorted(rec[1], key=lambda k: float(k.split(",")[4]))).take(100): print(i)
+for i in productsGroupBy.map(lambda rec: sorted(rec[1], key=lambda k: float(k.split(",")[4]), reverse=True)).take(100): print(i)
+
+#To get topN products by price in each category
+def getTopN(rec, topN):
+  x = [ ]
+  x = list(sorted(rec[1], key=lambda k: float(k.split(",")[4]), reverse=True))
+  import itertools
+  return (y for y in list(itertools.islice(x, 0, topN)))
+
+for i in productsMap.groupByKey().flatMap(lambda x: getTopN(x, 2)).collect(): print(i)
+
+#To get topN priced products by category
+def getTopDenseN(rec, topN):
+  x = [ ]
+  topNPrices = [ ]
+  prodPrices = [ ]
+  prodPricesDesc = [ ]
+  for i in rec[1]:
+    prodPrices.append(float(i.split(",")[4]))
+  prodPricesDesc = list(sorted(set(prodPrices), reverse=True))
+  import itertools
+  topNPrices = list(itertools.islice(prodPricesDesc, 0, topN))
+  for j in sorted(rec[1], key=lambda k: float(k.split(",")[4]), reverse=True):
+    if(float(j.split(",")[4]) in topNPrices):
+      x.append(j)
+  return (y for y in x)
+
+for i in productsMap.groupByKey().flatMap(lambda x: getTopDenseN(x, 2)).collect(): print(i)
+
+
+productsFlatMap = products.flatMap(lambda rec: (rec.split(",")[1], float(rec.split(",")[4])))
+for i in productsMap.groupByKey().flatMap(lambda x: getFirstTwo(x)).collect(): print(i)
+for i in productsMap.groupByKey().flatMap(lambda x: getAllSortByPrice(x, True)).collect(): print(i)
+for i in productsMap.groupByKey().flatMap(getAll).collect(): print(i)
+for i in productsMap.groupByKey().flatMap(getTop).collect(): print(i)
+
+select p.product_category_id, count(1) from 
+  (select product_category_id, max(product_price) product_price 
+   from products group by product_category_id) q1 
+   join products p
+   on p.product_category_id = q1.product_category_id and p.product_price = q1.product_price
+   where p.product_category_id = 55
+group by p.product_category_id;
+
+select p.* from 
+  (select product_category_id, max(product_price) product_price 
+   from products group by product_category_id) q1 
+   join products p
+   on p.product_category_id = q1.product_category_id and p.product_price = q1.product_price;

@@ -540,16 +540,21 @@ for i in productsMap.groupByKey().flatMap(lambda x: getAllSortByPrice(x, True)).
 for i in productsMap.groupByKey().flatMap(getAll).collect(): print(i)
 for i in productsMap.groupByKey().flatMap(getTop).collect(): print(i)
 
-select p.product_category_id, count(1) from 
-  (select product_category_id, max(product_price) product_price 
-   from products group by product_category_id) q1 
-   join products p
-   on p.product_category_id = q1.product_category_id and p.product_price = q1.product_price
-   where p.product_category_id = 55
-group by p.product_category_id;
+#Sorting using queries
+#Global sorting and ranking
+select * from products order by product_price desc;
+select * from products order by product_price desc limit 10;
 
-select p.* from 
-  (select product_category_id, max(product_price) product_price 
-   from products group by product_category_id) q1 
-   join products p
-   on p.product_category_id = q1.product_category_id and p.product_price = q1.product_price;
+#By key sorting
+#Using order by is not efficient, it serializes
+select * from products order by product_category_id, product_price desc;
+
+#Using distribute by sort by (to distribute sorting and scale it up)
+select * from products distribute by product_category_id sort by product_price desc;
+
+#By key ranking (in Hive we can use windowing/analytic functions)
+select * from (select p.*, 
+dense_rank() over (partition by product_category_id order by product_price desc) dr
+from products p
+distribute by product_category_id) q
+where dr <= 2 order by product_category_id, dr;

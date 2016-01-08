@@ -237,10 +237,10 @@ ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], 1))
 for i in ordersMap.countByKey().items(): print(i)
 #groupByKey is not very efficient
 ordersByStatus = ordersMap.groupByKey().map(lambda t: (t[0], sum(t[1])))
-ordersByStatus = ordersMap.reduceByKey(lambda acc, val: acc + val)
+ordersByStatus = ordersMap.reduceByKey(lambda acc, value: acc + value)
 ordersMap = ordersRDD.map(lambda rec:  (rec.split(",")[3], rec))
-ordersByStatus = ordersMap.aggregateByKey(0, lambda acc, val: acc+1, lambda acc, val: acc+val)
-ordersByStatus = ordersMap.combineByKey(lambda val: 1, lambda acc, val: acc+1, lambda acc, val: acc+val)
+ordersByStatus = ordersMap.aggregateByKey(0, lambda acc, value: acc+1, lambda acc, value: acc+value)
+ordersByStatus = ordersMap.combineByKey(lambda value: 1, lambda acc, value: acc+1, lambda acc, value: acc+value)
 
 for recs in ordersByStatus.collect():
   print(recs)
@@ -264,7 +264,7 @@ orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
 ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
 ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: (t[1][1].split(",")[1], float(t[1][0].split(",")[4])))
 
-revenuePerDay = ordersJoinOrderItemsMap.reduceByKey(lambda acc, val: acc + val)
+revenuePerDay = ordersJoinOrderItemsMap.reduceByKey(lambda acc, value: acc + value)
 for i in revenuePerDay.collect(): print(i)
 
 #average
@@ -286,7 +286,7 @@ orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (rec.split(",")[1], rec))
 ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
 ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: ((t[1][1].split(",")[1], t[0]), float(t[1][0].split(",")[4])))
 
-revenuePerDayPerOrder = ordersJoinOrderItemsMap.reduceByKey(lambda acc, val: acc + val)
+revenuePerDayPerOrder = ordersJoinOrderItemsMap.reduceByKey(lambda acc, value: acc + value)
 revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(lambda rec: (rec[0][0], rec[1]))
 
 revenuePerDayPerOrder = revenuePerDayPerOrderMap.combineByKey( \
@@ -441,7 +441,7 @@ orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
 ordersParsedRDD = ordersRDD.filter(lambda rec: rec.split(",")[3] in "CANCELED").map(lambda rec: (int(rec.split(",")[0]), rec))
 orderItemsParsedRDD = orderItemsRDD.map(lambda rec: (int(rec.split(",")[1]), float(rec.split(",")[4])))
-orderItemsAgg = orderItemsParsedRDD.reduceByKey(lambda acc, val: (acc + val))
+orderItemsAgg = orderItemsParsedRDD.reduceByKey(lambda acc, value: (acc + value))
 
 ordersJoinOrderItems = orderItemsAgg.join(ordersParsedRDD)
 

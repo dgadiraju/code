@@ -471,36 +471,6 @@ orders.takeOrdered(5)(Ordering[Int].on(x => x.split(",")(0).toInt)).foreach(prin
 orders.takeOrdered(5)(Ordering[Int].reverse.on(x => x.split(",")(0).toInt)).foreach(println)
 
 
-#By key sorting and ranking
-def getAllSortByPrice(rec, bool):
-  if(bool == False):
-    x = sorted(rec[1], key = lambda k: -float(k.split(",")[4]))
-  else:
-    x = sorted(rec[1], key = lambda k: float(k.split(",")[4]))
-  return (y for y in x)
-    
-
-def getFirstTwo(rec):
-  x = [ ]
-  ctr = 0
-  for i in rec[1]:
-    if(ctr < 2):
-      x.append(i)
-    ctr = ctr + 1
-  return (y for y in x)
-
-def getTop(rec):
-  x = [ ]
-  max = 0
-  for i in rec[1]:
-    prodPrice = float(i.split(",")[4])
-    if(prodPrice > max):
-      max = prodPrice
-  for j in rec[1]:
-    if(float(j.split(",")[4]) == max):
-      x.append(j)
-  return (y for y in x)
-
 val products = sc.textFile("/user/cloudera/sqoop_import/products")
 val productsMap = products.map(rec => (rec.split(",")(1), rec))
 val productsGroupBy = productsMap.groupByKey()
@@ -527,31 +497,34 @@ def getAll(rec: (String, Iterable[String])): Iterable[String] = {
 productsGroupBy.flatMap(x => getAll(x)).collect().foreach(println)
 
 #To get topN products by price in each category
-def getTopN(rec: (String, Iterable[String]), topN):
-  x = [ ]
-  x = list(sorted(rec[1], key=lambda k: float(k.split(",")[4]), reverse=True))
-  import itertools
-  return (y for y in list(itertools.islice(x, 0, topN)))
+def getTopN(rec: (String, Iterable[String]), topN: Int): Iterable[String] = {
+  val x: List[String] = rec._2.toList.sortBy(k => -k.split(",")(4).toFloat).take(topN)
+  return x
+}
 
-for i in productsMap.groupByKey().flatMap(lambda x: getTopN(x, 2)).collect(): print(i)
+val products = sc.textFile("/user/cloudera/sqoop_import/products")
+val productsMap = products.map(rec => (rec.split(",")(1), rec))
+productsMap.groupByKey().flatMap(x => getTopN(x, 2)).collect().foreach(println)
 
 #To get topN priced products by category
-def getTopDenseN(rec, topN):
-  x = [ ]
-  topNPrices = [ ]
-  prodPrices = [ ]
-  prodPricesDesc = [ ]
-  for i in rec[1]:
-    prodPrices.append(float(i.split(",")[4]))
-  prodPricesDesc = list(sorted(set(prodPrices), reverse=True))
-  import itertools
-  topNPrices = list(itertools.islice(prodPricesDesc, 0, topN))
-  for j in sorted(rec[1], key=lambda k: float(k.split(",")[4]), reverse=True):
-    if(float(j.split(",")[4]) in topNPrices):
-      x.append(j)
-  return (y for y in x)
+def getTopDenseN(rec: (String, Iterable[String]), topN: Int): Iterable[String] = {
+  var prodPrices: List[Float] = List()
+  var topNPrices: List[Float] = List()
+  var sortedRecs: List[String] = List()
+  for(i <- rec._2) {
+    prodPrices = prodPrices:+ i.split(",")(4).toFloat
+  }
+  topNPrices = prodPrices.distinct.sortBy(k => -k).take(topN)
+  sortedRecs = rec._2.toList.sortBy(k => -k.split(",")(4).toFloat) 
+  var x: List[String] = List()
+  for(i <- sortedRecs) {
+    if(topNPrices.contains(i.split(",")(4).toFloat))
+      x = x:+ i 
+  }
+  return x
+}
 
-for i in productsMap.groupByKey().flatMap(lambda x: getTopDenseN(x, 2)).collect(): print(i)
+productsMap.groupByKey().flatMap(x => getTopDenseN(x, 2)).collect().foreach(println)
 
 
 productsFlatMap = products.flatMap(lambda rec: (rec.split(",")[1], float(rec.split(",")[4])))

@@ -1,0 +1,158 @@
+#1. Rename host
+perl -p -i -e "s/localhost.localdomain/${hostname}/g" /etc/sysconfig/network
+
+#2. Add groups and users
+#Add group hadoop and user hduser
+groupadd hadoop; useradd hduser -g hadoop; usermod -aG wheel hduser
+
+#Add hduser to sudoers (visudo) and set up password using passwd command
+perl -p -i -e "s/\# \%wheel/\%wheel/g" /etc/sudoers
+
+passwd hduser
+
+#3. On all nodes
+#Stop and disable iptables
+service iptables stop
+chkconfig iptables off
+
+#Enable password authentication
+perl -p -i -e "s/^PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+service sshd restart
+
+#Disable selinux
+perl -p -i -e "s/^SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
+
+#Disable vm.swappiness (Virtual memory swappiness)
+sysctl -a |grep swappiness
+echo "vm.swappiness=0" >> /etc/sysctl.conf
+
+#Reboot the server
+init 6
+
+#4. Setup SSH
+#Run ssh keygen on the node where cloudera manager will be installed
+ssh-keygen
+
+#Copy id_rsa.pub to all nodes in cluster
+ssh hduser@${hostname} 'mkdir -p ~/.ssh;chmod 700 ~/.ssh'
+cat ~/.ssh/id_rsa.pub | ssh hduser@${hostname} "cat >> ~/.ssh/authorized_keys"
+
+scp /etc/hosts root@vm03host07:/etc/hosts
+scp /etc/hosts root@vm04host07:/etc/hosts
+scp /etc/hosts root@vm05host07:/etc/hosts
+scp /etc/hosts root@vm06host07:/etc/hosts
+scp /etc/hosts root@vm07host07:/etc/hosts
+
+#5. Prepare all nodes
+
+#Setup ntpd
+ssh root@vm02host07 "service ntpd start; chkconfig ntpd on"
+ssh root@vm03host07 "service ntpd start; chkconfig ntpd on"
+ssh root@vm04host07 "service ntpd start; chkconfig ntpd on"
+ssh root@vm05host07 "service ntpd start; chkconfig ntpd on"
+ssh root@vm06host07 "service ntpd start; chkconfig ntpd on"
+ssh root@vm07host07 "service ntpd start; chkconfig ntpd on"
+
+#Check file system on all nodes
+ssh root@vm02host07 "df -h"
+ssh root@vm03host07 "df -h"
+ssh root@vm04host07 "df -h"
+ssh root@vm05host07 "df -h"
+ssh root@vm06host07 "df -h"
+ssh root@vm07host07 "df -h"
+
+#Create soft link /disks for /home
+ssh root@vm02host07 "ln -s /home /disks"
+ssh root@vm03host07 "ln -s /home /disks"
+ssh root@vm04host07 "ln -s /home /disks"
+ssh root@vm05host07 "ln -s /home /disks"
+ssh root@vm06host07 "ln -s /home /disks"
+ssh root@vm07host07 "ln -s /home /disks"
+
+#Create /stage/cloudera and download cloudera binaries
+ssh root@vm02host07 "mkdir -p /stage/cloudera"
+ssh root@vm03host07 "mkdir -p /stage/cloudera"
+ssh root@vm04host07 "mkdir -p /stage/cloudera"
+ssh root@vm05host07 "mkdir -p /stage/cloudera"
+ssh root@vm06host07 "mkdir -p /stage/cloudera"
+ssh root@vm07host07 "mkdir -p /stage/cloudera"
+
+#Download cloudera binaries on vm02host07 under /stage/cloudera
+nohup wget http://archive-primary.cloudera.com/cm5/repo-as-tarball/5.2.1/cm5.2.1-centos6.tar.gz &
+nohup wget http://archive-primary.cloudera.com/cdh5/repo-as-tarball/5.2.1/cdh5.2.1-centos6.tar.gz &
+nohup wget http://archive-primary.cloudera.com/cm5/installer/5.2.1/cloudera-manager-installer.bin &
+
+#Copy cloudera binaries to all nodes
+nohup scp /stage/cloudera/* root@vm03host07:/stage/cloudera &
+nohup scp /stage/cloudera/* root@vm04host07:/stage/cloudera &
+nohup scp /stage/cloudera/* root@vm05host07:/stage/cloudera &
+nohup scp /stage/cloudera/* root@vm06host07:/stage/cloudera &
+nohup scp /stage/cloudera/* root@vm07host07:/stage/cloudera &
+
+#Validate copy
+ssh root@vm03host07 "ls -ltr /stage/cloudera"
+ssh root@vm04host07 "ls -ltr /stage/cloudera"
+ssh root@vm05host07 "ls -ltr /stage/cloudera"
+ssh root@vm06host07 "ls -ltr /stage/cloudera"
+ssh root@vm07host07 "ls -ltr /stage/cloudera"
+
+#Unzip them
+nohup ssh root@vm02host07 "tar xzf /stage/cloudera/cm5.2.0-centos6.tar.gz -C /stage/cloudera; tar xzf /stage/cloudera/cdh5.2.0-centos6.tar.gz -C /stage/cloudera" &
+nohup ssh root@vm03host07 "tar xzf /stage/cloudera/cm5.2.0-centos6.tar.gz -C /stage/cloudera; tar xzf /stage/cloudera/cdh5.2.0-centos6.tar.gz -C /stage/cloudera" &
+nohup ssh root@vm04host07 "tar xzf /stage/cloudera/cm5.2.0-centos6.tar.gz -C /stage/cloudera; tar xzf /stage/cloudera/cdh5.2.0-centos6.tar.gz -C /stage/cloudera" &
+nohup ssh root@vm05host07 "tar xzf /stage/cloudera/cm5.2.0-centos6.tar.gz -C /stage/cloudera; tar xzf /stage/cloudera/cdh5.2.0-centos6.tar.gz -C /stage/cloudera" &
+nohup ssh root@vm06host07 "tar xzf /stage/cloudera/cm5.2.0-centos6.tar.gz -C /stage/cloudera; tar xzf /stage/cloudera/cdh5.2.0-centos6.tar.gz -C /stage/cloudera" &
+nohup ssh root@vm07host07 "tar xzf /stage/cloudera/cm5.2.0-centos6.tar.gz -C /stage/cloudera; tar xzf /stage/cloudera/cdh5.2.0-centos6.tar.gz -C /stage/cloudera" &
+
+#Create local repository
+#Follow document and create /etc/yum.repos.d/local-cloudera.repo with below details
+[local-cm]
+baseurl=file:///stage/cloudera/cm/5
+gpgcheck=0
+[local-cdh5]
+baseurl=file:///stage/cloudera/cdh/5
+gpgcheck=0
+
+#Copy /etc/yum.repos.d/local-cloudera.repo to all nodes
+scp /etc/yum.repos.d/local-cloudera.repo root@vm03host07:/etc/yum.repos.d/local-cloudera.repo
+scp /etc/yum.repos.d/local-cloudera.repo root@vm04host07:/etc/yum.repos.d/local-cloudera.repo
+scp /etc/yum.repos.d/local-cloudera.repo root@vm05host07:/etc/yum.repos.d/local-cloudera.repo
+scp /etc/yum.repos.d/local-cloudera.repo root@vm06host07:/etc/yum.repos.d/local-cloudera.repo
+scp /etc/yum.repos.d/local-cloudera.repo root@vm07host07:/etc/yum.repos.d/local-cloudera.repo
+
+#chmod +x
+chmod +x /stage/cloudera/cloudera-manager-installer.bin
+
+#Delete gz files
+ssh root@vm02host07 "rm -f /stage/cloudera/*tar.gz"
+ssh root@vm03host07 "rm -f /stage/cloudera/*tar.gz"
+ssh root@vm04host07 "rm -f /stage/cloudera/*tar.gz"
+ssh root@vm05host07 "rm -f /stage/cloudera/*tar.gz"
+ssh root@vm06host07 "rm -f /stage/cloudera/*tar.gz"
+ssh root@vm07host07 "rm -f /stage/cloudera/*tar.gz"
+
+#Delete nohup.out
+ssh root@vm02host07 "rm -f /stage/cloudera/nohup.out"
+ssh root@vm03host07 "rm -f /stage/cloudera/nohup.out"
+ssh root@vm04host07 "rm -f /stage/cloudera/nohup.out"
+ssh root@vm05host07 "rm -f /stage/cloudera/nohup.out"
+ssh root@vm06host07 "rm -f /stage/cloudera/nohup.out"
+ssh root@vm07host07 "rm -f /stage/cloudera/nohup.out"
+
+#validate cdh
+ssh root@vm02host07 "du -s /stage/cloudera/cdh"
+ssh root@vm03host07 "du -s /stage/cloudera/cdh"
+ssh root@vm04host07 "du -s /stage/cloudera/cdh"
+ssh root@vm05host07 "du -s /stage/cloudera/cdh"
+ssh root@vm06host07 "du -s /stage/cloudera/cdh"
+ssh root@vm07host07 "du -s /stage/cloudera/cdh"
+
+#validate cm
+ssh root@vm02host07 "du -s /stage/cloudera/cm"
+ssh root@vm03host07 "du -s /stage/cloudera/cm"
+ssh root@vm04host07 "du -s /stage/cloudera/cm"
+ssh root@vm05host07 "du -s /stage/cloudera/cm"
+ssh root@vm06host07 "du -s /stage/cloudera/cm"
+ssh root@vm07host07 "du -s /stage/cloudera/cm"
+
+./cloudera-manager-installer.bin --skip_repo_package=1

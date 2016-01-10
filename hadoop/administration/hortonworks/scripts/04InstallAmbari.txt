@@ -1,0 +1,29 @@
+#Use 04setup_cluster directory to set up pre-requisites using parallel ssh
+
+#1. Login as root or sudo to root on the node where you want to install ambari server
+
+#2. Go to your yum repository server and make sure you have binaries as well as ambari.repo and hdp.repo are configured properly
+#Also make sure repo files are copied to /etc/yum.repos.d on all the servers
+
+#3. Install ambari server
+sudo yum -y install ambari-server
+sudo ambari-server setup
+#Choose jdk 1.8, typical database configuration
+sudo ambari-server start
+chkconfig ambari-server on
+
+#4. Go to browser and enter http://<ambari_server_ip>:8080
+#admin/admin are default username and password
+
+#5. Launch the wizard and enter all nodes including the one that is being used as cloudera manager
+
+#6. Use local yum repository to complete the installation of ambari-agent, ambari-metrics as well as zookeeper as planned
+# Provide ip addresses of all hosts
+# private key of sudoer
+# sudoer username (root for vm and ec2-user for aws)
+# Click on advanced option and change the repository urls from public to our local repository server
+
+#7. Configure Masters
+#8. Configure Slaves
+#9. Deploy and complete the installation
+#10. Restart those services which displays orange circular arrows

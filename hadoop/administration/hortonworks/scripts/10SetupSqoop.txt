@@ -1,0 +1,103 @@
+#1. Set up database
+#Go to mysql database (for lab password is hadoop20)
+mysql -u root -p
+create database demo;
+create user demo_user identified by 'hadoop20';
+grant all on demo.* to 'demo_user';
+flush privileges;
+exit;
+
+#create tables in mysql
+mysql -u demo_user -p
+use demo;
+CREATE TABLE cards
+(COLOR VARCHAR(10),
+SUIT VARCHAR(10),
+PIP VARCHAR(2));
+
+#2. Set up connectivity to the database 
+sudo yum install mysql-connector-java
+ln -s /usr/share/java/mysql-connector-java.jar /var/lib/sqoop/mysql-connector-java.jar
+
+#3. Run Sqoop export
+#Data will be copied from hive table cards.single_deck to mysql table demo.cards
+sqoop export --connect "jdbc:mysql://ip-10-0-0-15/demo" \
+       --username demo_user \
+       --password hadoop20 \
+       --table cards \
+       --export-dir /user/hive/warehouse/cards.db/single_deck \
+       --input-fields-terminated-by '|' \
+       --input-lines-terminated-by '\n' \
+       --num-mappers 2 \
+       --batch \
+       --outdir java_files
+
+#4. Create hive table
+#Launch hive
+use cards;
+CREATE TABLE cards
+(COLOR STRING,
+SUIT STRING,
+PIP STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+
+#5. Run Sqoop Import
+
+sqoop import --connect "jdbc:mysql://ip-10-0-0-15/demo" \
+       --username demo_user \
+       --password hadoop20 \
+       --table cards \
+       --target-dir /user/hduser/sqoop_cards \
+       --fields-terminated-by '|' \
+       --lines-terminated-by '\n' \
+       --num-mappers 4 \
+       --split-by suit \
+       --outdir java_files
+
+# Manual Parallelism to address skew
+
+sqoop import --connect "jdbc:mysql://ip-10-0-0-15/demo" \
+       --username demo_user \
+       --password hadoop20 \
+       --table cards \
+       --target-dir /user/hduser/sqoop_cards01 \
+       --fields-terminated-by '|' \
+       --lines-terminated-by '\n' \
+       --num-mappers 1 \
+       --where "suit = 'HEART'" \
+       --outdir java_files
+
+sqoop import --connect "jdbc:mysql://ip-10-0-0-15/demo" \
+       --username demo_user \
+       --password hadoop20 \
+       --table cards \
+       --target-dir /user/hduser/sqoop_cards02 \
+       --fields-terminated-by '|' \
+       --lines-terminated-by '\n' \
+       --num-mappers 1 \
+       --where "suit = 'CLUB'" \
+       --outdir java_files
+
+sqoop import --connect "jdbc:mysql://ip-10-0-0-15/demo" \
+       --username demo_user \
+       --password hadoop20 \
+       --table cards \
+       --target-dir /user/hduser/sqoop_cards03 \
+       --fields-terminated-by '|' \
+       --lines-terminated-by '\n' \
+       --num-mappers 1 \
+       --where "suit = 'DIAMOND'" \
+       --outdir java_files
+
+sqoop import --connect "jdbc:mysql://ip-10-0-0-15/demo" \
+       --username demo_user \
+       --password hadoop20 \
+       --table cards \
+       --target-dir /user/hduser/sqoop_cards04 \
+       --fields-terminated-by '|' \
+       --lines-terminated-by '\n' \
+       --num-mappers 1 \
+       --where "suit = 'SPADE'" \
+       --outdir java_files

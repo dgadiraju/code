@@ -1,0 +1,35 @@
+#0. Steps required to set up oozie repository in mysql
+sudo yum install mysql-connector-java
+ln -s /usr/share/java/mysql-connector-java.jar /var/lib/oozie/mysql-connector-java.jar
+
+#Go to the host where mysql database is running
+mysql -u root -p
+create database oozie;
+create user oozie identified by 'hadoop20';
+grant all on oozie.* to 'oozie';
+flush privileges;
+
+#Use safety-valve to update database connectivity parameters to use mysql for oozie repository
+
+#1. Status of Oozie
+oozie admin -oozie http://ip-10-0-0-21:11000/oozie -status
+
+#2. Oozie version
+oozie admin -oozie http://ip-10-0-0-21:11000/oozie -version
+
+#3. Set up examples
+mkdir -p ~/demo/oozie
+cd ~/demo/oozie
+cp /opt/cloudera/parcels/CDH-4.5.0-1.cdh4.5.0.p0.30/share/doc/oozie-3.3.2+97/oozie-examples.tar.gz .
+tar xvf oozie-examples.tar.gz
+
+#4. Modify namenode and jobtracker urls in examples/apps/map-reduce/job.properties
+hadoop fs -put examples examples
+
+#5. Run Job
+oozie job -oozie http://ip-10-0-0-21:11000/oozie -config examples/apps/map-reduce/job.properties -run
+
+#6. Validate Job
+oozie job -oozie http://ip-10-0-0-21:11000/oozie -info <Enter job id>
+
+#7. Monitor using Resource Manager WI

@@ -1,0 +1,9 @@
+#1. Fetch data from file
+cards_rows = LOAD '/user/hive/warehouse/cards.db/single_deck' ;
+
+#2. Process data
+cards_group = GROUP cards_rows ALL;
+cards_count = FOREACH cards_group GENERATE COUNT_STAR(cards_rows) as ct;
+
+#3. Dump or store data
+DUMP cards_count;

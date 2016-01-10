@@ -1,0 +1,21 @@
+#1. Login as root or sudo to root on the node where you want to install cloudera manager
+
+#2. Go to /stage/cloudera and validate cloudera binaries are downloaded and unzipped
+
+#3. Run cloudera manager installer
+chmod +x ./cloudera-manager-installer.bin
+./cloudera-manager-installer.bin --skip_repo_package=1
+
+#4. Go to browser and enter http://<cloudera manager hostname>:7180
+#admin/admin are default username and password
+
+#5. Launch the wizard and enter all nodes including the one that is being used as cloudera manager
+
+#6. Use packages to install for both CM and CDH
+# Select custom repository
+# Choose package and "Custom Repository"
+# CDH: file:///stage/cloudera/cdh/5
+# CM: file:///stage/cloudera/cm/5
+# Key: file:///stage/cloudera/cm/RPM-GPG-KEY-cloudera
+
+#7. Start configuring services with cloudera management service

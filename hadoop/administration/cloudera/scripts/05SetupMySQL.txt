@@ -1,0 +1,41 @@
+-- Install MySQL on Cloudera VM
+sudo yum install mysql-server
+sudo service mysqld start
+sudo yum install mysql-connector-java
+sudo chkconfig --list mysqld
+sudo chkconfig mysqld on
+sudo chkconfig --list mysqld
+
+sudo /usr/bin/mysql_secure_installation
+[...]
+Enter current password for root (enter for none):
+OK, successfully used password, moving on...
+[...]
+Set root password? [Y/n] y
+New password:
+Re-enter new password:
+Remove anonymous users? [Y/n] Y
+[...]
+Disallow root login remotely? [Y/n] N
+[...]
+Remove test database and access to it [Y/n] Y
+[...]
+Reload privilege tables now? [Y/n] Y
+All done!
+
+sudo /sbin/chkconfig mysqld on
+sudo /sbin/chkconfig --list mysqld
+#Output: mysqld         	0:off	1:off	2:on	3:on	4:on	5:on	6:off
+
+-- Connecting to mysql
+mysql -u root -p
+
+-- Create database
+CREATE DATABASE cards;
+USE cards;
+
+-- Create user
+CREATE USER 'deck' IDENTIFIED BY 'hadoop';
+GRANT SELECT,INSERT,UPDATE,DELETE,LOCK TABLES,EXECUTE ON cards.* TO 'deck';
+GRANT ALL ON cards.* TO 'deck';
+FLUSH PRIVILEGES;

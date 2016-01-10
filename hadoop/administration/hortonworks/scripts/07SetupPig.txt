@@ -1,0 +1,18 @@
+#Make sure file deck_of_cards.txt exists
+#Virtual machine
+hadoop fs -ls /user/root/deck_of_cards.txt
+#AWS
+hadoop fs -ls /user/ec2-user/deck_of_cards.txt
+
+#1. Fetch data from file
+-- Virtual machines
+cards_rows = LOAD '/user/root/deck_of_cards.txt' ;
+-- AWS
+cards_rows = LOAD '/user/ec2-user/deck_of_cards.txt';
+
+#2. Process data
+cards_group = GROUP cards_rows ALL;
+cards_count = FOREACH cards_group GENERATE COUNT_STAR(cards_rows) as ct;
+
+#3. Dump or store data
+DUMP cards_count;

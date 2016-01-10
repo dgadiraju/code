@@ -1,0 +1,85 @@
+#1. Create hadoop user space and copy data
+#Login as root or any sudoer user
+#pick unique username, you can validate using "id dgadiraju" command 
+#run useradd command as below to create user if required
+useradd dgadiraju -g hadoop
+#sudo to osuser hdfs
+sudo su - hdfs
+#create hdfs directory with name of os user dgadiraju
+hadoop fs -mkdir /user/dgadiraju
+#change 
+hadoop fs -chown dgadiraju:dgadiraju /user/dgadiraju
+exit
+sudo su - dgadiraju
+
+#2. Copy data to hdfs; eg: largedeck.txt
+#scp or ftp from your PC to gateway/client node in the hadoop cluster
+#cd to the directory where largedeck.txt is copied
+hadoop fs -put largedeck.txt /user/dgadiraju/largedeck.txt
+
+#3. Validate hdfs, make sure you understand the output
+hdfs fsck /user/dgadiraju/largedeck.txt -files -blocks -locations
+
+#4. Checking whether processes are not running or not
+#on slaves
+ps -ef|grep datanode
+#on masters
+ps -ef|grep namenode
+
+#5. Validate parameters
+#check for parameters in core-site.xml and hdfs-site.xml in latest directories
+#Refer the presentation for list of important parameters
+cd /etc/hadoop/conf
+ls -ltr core-site.xml hdfs-site.xml hadoop-env.sh
+
+#6. Validate MRv1/Classic processes on Cloudera Quickstart VM
+#on slaves
+ps -ef|grep tasktracker
+#on masters
+ps -ef|grep jobtracker
+
+#7. Validate parameters on Cloudera Quickstart VM
+#cd /var/run/cloudera-scm-agent/process and run "ls -ltr|grep JOBTRACKER"
+#cd /var/run/cloudera-scm-agent/process and run "ls -ltr|grep TASKTRACKER"
+#check for parameters in mapred-site.xml in latest directories
+#Refer the presentation for list of important parameters
+
+#8. Run map reduce job using MRv1/Classic
+#Copy training.jar and run below command
+hadoop fs -rm -R /user/dgadiraju/output
+hadoop jar training.jar training.demo.cards.CardCountBySuit /user/dgadiraju/largedeck.txt /user/dgadiraju/output
+
+#9. Monitor job using mapred job -list command
+#To monitor while running
+mapred job -list
+#To monitor after completed or failed
+mapred job -list all
+
+#10. Monitor job using Job Tracker Web Interface
+#Using Internet Explorer or Safari or any browser
+#Type http://<job_tracker>:50030 in address bar
+#eg: http://vm03host07:50030
+
+#11. Validate MRv2/YARN processes
+#on slaves
+ps -ef|grep nodemanager
+#on masters
+ps -ef|grep resourcemanager
+
+#12. Validate parameters
+#check for parameters in yarn-site.xml and mapred-site.xml in latest directories
+#Refer the presentation for list of important parameters
+ls -ltr mapred-site.xml yarn-site.xml 
+
+#13. Run map reduce job using MRv2/YARN
+hadoop fs -rm -R /user/dgadiraju/output
+hadoop jar training.jar training.demo.cards.CardCount /user/dgadiraju/largedeck.txt /user/dgadiraju/output
+
+#14. Monitor job using mapred job -list command
+#Refer 9
+
+#15. Monitor job using Resource Manager Web Interface
+#Using Internet Explorer or Safari or any browser
+#Type http://<resource_manager>:8088 in address bar
+#eg: http://vm03host07:8088
+

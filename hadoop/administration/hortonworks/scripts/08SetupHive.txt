@@ -1,0 +1,76 @@
+#Setting up mysql database for hive metastore
+sudo yum -y install mysql-server
+sudo yum -y install mysql-connector-java
+sudo service mysqld start
+sudo chkconfig mysqld on
+
+#Login to mysql as root "mysql -u root"
+#Create database for hive
+create database hive;
+create user 'hive' identified by 'itversity';
+grant all on hive.* to hive;
+flush privileges;
+
+#1. set command and .hiverc
+#To display current value of a parameter
+set mapred.reduce.tasks;
+
+#To override the value of a parameter
+set mapred.reduce.tasks=5;
+
+#To permanently change values of parameters for a given user who runs hive commands
+#update ~/.hiverc
+#With latest hortonworks distributions hive typically runs in Tez context
+#To run in mr for a particular user (such as ec2-user), 
+#update .hiverc of that user in home directory with set hive.execution.engine=mr
+#To permanently change hive execution engine, update config file hive-site.xml using 
+#web interfaces
+
+#2. Create database, default vs. user databases
+# Create database
+create database if not exists cards;
+
+# Switch to database
+use cards;
+
+#Run hadoop fs commands
+dfs -ls /user;
+
+#3. Create hive table
+CREATE TABLE large_deck (
+COLOR string,
+SUIT string,
+PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+#4. Load Data from OS local path /home/hduser/data/cards
+LOAD DATA LOCAL INPATH '/home/hduser/data/cards/largedeck.txt' INTO TABLE large_deck;
+
+#5. Insert Data
+CREATE TABLE deck_of_cards_pby_pip (
+COLOR string,
+SUIT string)
+PARTITIONED BY (PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+INSERT OVERWRITE TABLE deck_of_cards_pby_pip PARTITION (pip) SELECT * FROM small_deck;
+
+#6. Run sample hive query
+SELECT PIP, SUIT, count(1) FROM deck_of_cards_pby_pip GROUP BY PIP, SUIT;
+
+#7. Create Hive user defined function
+#You need to get jar file from developer, lca.lca_to_date is the java class name for Hive UDF
+add jar /home/hduser/demo/hive/lca_hive.jar;
+create temporary function lca_to_date as 'lca.lca_to_date';
+
+#8. hive, "hive -e" and "hive -f"
+#hive launchs hive CLI
+#hive -e runs query and returns context to shell
+#useful to run individual commands as part of shell scripts
+hive -e "use cards; select count(1) from largedeck;'
+
+#hive -f can be used to include many statements (eg: hivef.hql)
+#then run as
+hive -f hivef.hql

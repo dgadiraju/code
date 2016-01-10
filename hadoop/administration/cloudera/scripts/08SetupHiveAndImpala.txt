@@ -1,0 +1,55 @@
+#1. set command and .hiverc
+#To display current value of a parameter
+set mapred.reduce.tasks;
+
+#To override the value of a parameter
+set mapred.reduce.tasks=5;
+
+#To permanently change values of parameters for a given user who runs hive commands
+#update ~/.hiverc
+
+#2. Create database, default vs. user databases
+# Create database
+create database if not exists cards;
+
+# Switch to database
+use cards;
+
+#Run hadoop fs commands
+dfs -ls /user/hive/warehouse;
+
+#3. Create hive table
+CREATE TABLE large_deck (
+COLOR string,
+SUIT string,
+PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+#4. Load Data
+LOAD DATA LOCAL INPATH '/home/hduser/data/cards/largedeck.txt' INTO TABLE large_deck;
+
+#5. Insert Data
+CREATE TABLE deck_of_cards_pby_pip (
+COLOR string,
+SUIT string)
+PARTITIONED BY (PIP string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+INSERT OVERWRITE TABLE deck_of_cards_pby_pip PARTITION (pip) SELECT * FROM small_deck;
+
+#6. Run sample hive query
+SELECT PIP, SUIT, count(1) FROM deck_of_cards_pby_pip GROUP BY PIP, SUIT;
+
+#7. Create Hive user defined function
+#You need to get jar file from developer, lca.lca_to_date is the java class name for Hive UDF
+add jar /home/hduser/demo/hive/lca_hive.jar;
+create temporary function lca_to_date as 'lca.lca_to_date';
+
+#8. hive, "hive -e" and "hive -f"
+
+#9. Run sample impala query
+#Launch impala shell and run 
+SELECT PIP, SUIT, count(1) FROM deck_of_cards_pby_pip GROUP BY PIP, SUIT;
+

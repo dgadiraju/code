@@ -1,0 +1,30 @@
+#http://docs.hortonworks.com/HDPDocuments/Ambari-2.1.0.0/bk_Installing_HDP_AMB/content/_ambari_repositories.html
+#Ambari repo file and repository
+ 	http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.1.0/ambari.repo
+ 	http://public-repo-1.hortonworks.com/ambari/centos6/ambari-2.1.0-centos6.tar.gz
+
+#HDP and HDP-UTILS repo file and repositories
+	http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.0.0/hdp.repo
+	http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.0.0/HDP-2.3.0.0-centos6-rpm.tar.gz
+	http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.20/repos/centos6/HDP-UTILS-1.1.0.20-centos6.tar.gz
+	
+sudo wget -nv http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.1.0/ambari.repo -O /etc/yum.repos.d/ambari.repo
+sudo wget -nv 	http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.0.0/hdp.repo -O /etc/yum.repos.d/hdp.repo
+
+cd /var/www/ip-10-0-0-11.ec2.internal
+mkdir yum
+cd yum
+sudo nohup wget http://public-repo-1.hortonworks.com/ambari/centos6/ambari-2.1.0-centos6.tar.gz &
+sudo nohup wget http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.0.0/HDP-2.3.0.0-centos6-rpm.tar.gz &
+sudo nohup wget http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.20/repos/centos6/HDP-UTILS-1.1.0.20-centos6.tar.gz &
+
+nohup sudo tar xzf ambari-2.1.0-centos6.tar.gz &
+nohup sudo tar xzf HDP-2.3.0.0-centos6-rpm.tar.gz &
+nohup sudo tar xzf HDP-UTILS-1.1.0.20-centos6.tar.gz &
+
+-- Run these commands one by one for all hosts from the one which have public ip
+scp /etc/yum.repos.d/ambari.repo ec2-user@ip-10-0-0-13.ec2.internal:~
+scp /etc/yum.repos.d/hdp.repo ec2-user@ip-10-0-0-13.ec2.internal:~
+ssh -tt ec2-user@ip-10-0-0-13.ec2.internal "sudo mv ~/*.repo /etc/yum.repos.d"
+ssh -tt ec2-user@ip-10-0-0-13.ec2.internal "sudo gzip /etc/yum.repos.d/r*.repo"
+ssh ec2-user@ip-10-0-0-13.ec2.internal "ls -ltr /etc/yum.repos.d"

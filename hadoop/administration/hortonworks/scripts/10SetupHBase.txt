@@ -1,0 +1,43 @@
+#1. Launch HBase Shell
+hbase shell
+
+#2. List all HBase tables
+list
+#List tables starting with some prefix
+list "d.*"
+
+#3. Create HBase namespace and table
+create_namespace 'ns'
+
+#create table t1 in namespace ns with column family cf
+#we will not create columns while creating the table
+#we define columns while loading data using put command
+create 'ns:t1', 'cf'
+create 'demo', 'cf'
+
+#4. Insert/Update data (put command)
+put 'demo', 'r1', 'cf:c1', 'v1'
+put 'demo', 'r1', 'cf:c2', 'v2'
+put 'demo', 'r1', 'cf:c3', 'v3'
+
+put 'demo', 'r2', 'cf:c4', 'v4'
+put 'demo', 'r2', 'cf:c2', 'v4'
+put 'demo', 'r2', 'cf:c3', 'v4'
+put 'demo', 'r2', 'cf:c1', 'v4'
+
+put 'demo', 'r3', 'cf:c1', 'v1'
+#update
+put 'demo', 'r3', 'cf:c1', 'v2'
+
+#5. Count number rows
+count 'demo'
+
+#6. Read all the rows in the table
+scan 'demo'
+
+#7. Read an individual record by passing row key
+get 'demo', 'r1'
+
+#8. Get list of pre-defined filters
+show_filters
+ 

@@ -1,0 +1,6 @@
+ip-10-0-0-11.ec2.internal
+ip-10-0-0-12.ec2.internal
+ip-10-0-0-13.ec2.internal
+ip-10-0-0-14.ec2.internal
+ip-10-0-0-15.ec2.internal
+ip-10-0-0-16.ec2.internal

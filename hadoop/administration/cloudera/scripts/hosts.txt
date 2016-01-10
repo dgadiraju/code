@@ -1,0 +1,44 @@
+54.86.249.69    ec2-54-86-249-69.compute-1.amazonaws.com        ip-10-0-0-15.ec2.internal       NovisyncCDH500
+54.172.111.127  ec2-54-172-111-127.compute-1.amazonaws.com      ip-10-0-0-16.ec2.internal       NovisyncCDH501
+54.174.122.17   ec2-54-174-122-17.compute-1.amazonaws.com       ip-10-0-0-17.ec2.internal       NovisyncCDH502
+54.172.130.219  ec2-54-172-130-219.compute-1.amazonaws.com      ip-10-0-0-18.ec2.internal       NovisyncCDH503
+54.86.124.67    ec2-54-86-124-67.compute-1.amazonaws.com        ip-10-0-0-19.ec2.internal       NovisyncCDH504
+54.172.121.239  ec2-54-172-121-239.compute-1.amazonaws.com      ip-10-0-0-20.ec2.internal       NovisyncCDH505
+54.172.201.174  ec2-54-172-201-174.compute-1.amazonaws.com      ip-10-0-0-21.ec2.internal       NovisyncCDH506
+54.164.34.74    ec2-54-164-34-74.compute-1.amazonaws.com        ip-10-0-0-22.ec2.internal       NovisyncCDH507
+54.172.91.92    ec2-54-172-91-92.compute-1.amazonaws.com        ip-10-0-0-27.ec2.internal       NovisyncCDH508
+54.174.140.149  ec2-54-174-140-149.compute-1.amazonaws.com      ip-10-0-0-28.ec2.internal       NovisyncCDH509
+54.86.226.192   ec2-54-86-226-192.compute-1.amazonaws.com       ip-10-0-0-29.ec2.internal       NovisyncCDH510
+54.164.53.202   ec2-54-164-53-202.compute-1.amazonaws.com       ip-10-0-0-30.ec2.internal       NovisyncCDH511
+54.85.118.234   ec2-54-85-118-234.compute-1.amazonaws.com       ip-10-0-0-31.ec2.internal       NovisyncCDH512
+54.174.181.1    ec2-54-174-181-1.compute-1.amazonaws.com        ip-10-0-0-32.ec2.internal       NovisyncCDH513
+54.174.91.210   ec2-54-174-91-210.compute-1.amazonaws.com       ip-10-0-0-33.ec2.internal       NovisyncCDH514
+54.165.15.160   ec2-54-165-15-160.compute-1.amazonaws.com       ip-10-0-0-34.ec2.internal       NovisyncCDH515
+
+172.31.7.2  vm02host07
+172.31.7.3  vm03host07
+172.31.7.4  vm04host07
+172.31.7.5  vm05host07
+172.31.7.6  vm06host07
+172.31.7.7  vm07host07
+
+172.31.8.2  vm02host08
+172.31.8.3  vm03host08
+172.31.8.4  vm04host08
+172.31.8.5  vm05host08
+172.31.8.6  vm06host08
+172.31.8.7  vm07host08
+
+172.31.11.2  vm02host11
+172.31.11.3  vm03host11
+172.31.11.4  vm04host11
+172.31.11.5  vm05host11
+172.31.11.6  vm06host11
+172.31.11.7  vm07host11
+
+172.31.3.2  vm02host03
+172.31.3.3  vm03host03
+172.31.3.4  vm04host03
+172.31.3.5  vm05host03
+172.31.3.6  vm06host03
+172.31.3.7  vm07host03

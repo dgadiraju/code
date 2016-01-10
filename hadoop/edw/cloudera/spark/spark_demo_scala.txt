@@ -58,10 +58,10 @@ dataRDD.map(x => (x.split(",")(0), x.split(",")(1))).saveAsSequenceFile("/user/c
 import org.apache.hadoop.mapreduce.lib.output._
 
 val path="/user/cloudera/scalaspark/departmentsSeq"
-dataRDD.map(x => (new Text(x.split(",")(0)), new Text(x.split(",")(1)))).saveAsNewAPIHadoopFile(path, classOf(Text), classOf(Text), classOf(SequenceFileOutputFormat(Text, Text)))
+dataRDD.map(x => (new Text(x.split(",")(0)), new Text(x.split(",")(1)))).saveAsNewAPIHadoopFile(path, classOf[Text], classOf[Text], classOf[SequenceFileOutputFormat[Text, Text]])
 
 #reading sequence file
-sc.sequenceFile("/user/cloudera/spark/departmentsSeq", classOf(IntWritable), classOf(Text)).map(rec => rec.toString()).collect().foreach(println)
+sc.sequenceFile("/user/cloudera/spark/departmentsSeq", classOf[IntWritable], classOf[Text]).map(rec => rec.toString()).collect().foreach(println)
 
 import org.apache.spark.sql.hive.HiveContext
 val sqlContext = new HiveContext(sc)
@@ -525,12 +525,6 @@ def getTopDenseN(rec: (String, Iterable[String]), topN: Int): Iterable[String] =
 }
 
 productsMap.groupByKey().flatMap(x => getTopDenseN(x, 2)).collect().foreach(println)
-
-
-productsFlatMap = products.flatMap(lambda rec: (rec.split(",")[1], float(rec.split(",")[4])))
-for i in productsMap.groupByKey().flatMap(lambda x: getFirstTwo(x)).collect(): print(i)
-for i in productsMap.groupByKey().flatMap(lambda x: getAllSortByPrice(x, True)).collect(): print(i)
-for i in productsMap.groupByKey().flatMap(getTop).collect(): print(i)
 
 #Sorting using queries
 #Global sorting and ranking

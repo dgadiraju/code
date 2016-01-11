@@ -76,6 +76,10 @@ depts.collect().foreach(println)
 
 #Make sure you copy departments.json to HDFS
 #create departments.json on Linux file system
+<record>
+<department_id>2</department_id>
+<department_name>Fitness</department_name>
+</record>
 {"department_id":2, "department_name":"Fitness"}
 {"department_id":3, "department_name":"Footwear"}
 {"department_id":4, "department_name":"Apparel"}
@@ -536,7 +540,7 @@ select * from products order by product_price desc limit 10;
 select * from products order by product_category_id, product_price desc;
 
 #Using distribute by sort by (to distribute sorting and scale it up)
-select * from products distribute by product_category_id sort by product_price desc;
+select * from products distribute by product_category_id sort by product_category_id, product_price desc;
 
 #By key ranking (in Hive we can use windowing/analytic functions)
 select * from (select p.*, 

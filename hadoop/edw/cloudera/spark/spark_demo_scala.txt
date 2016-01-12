@@ -453,6 +453,12 @@ val ordersJoinOrderItems = orderItemsAgg.join(ordersParsedRDD)
 
 ordersJoinOrderItems.filter(rec => rec._2._1 >= 1000).take(5).foreach(println)
 
+#Using SQL
+import org.apache.spark.sql.hive.HiveContext
+val sqlContext = new HiveContext(sc)
+
+sqlContext.sql("select * from (select o.order_id, sum(oi.order_item_subtotal) as order_item_revenue from orders o join order_items oi on o.order_id = oi.order_item_order_id where o.order_status = 'CANCELED' group by o.order_id) q where order_item_revenue >= 1000").count()
+
 ##########################################################
 
 # Write a query that produces ranked or sorted data using Spark
@@ -540,7 +546,7 @@ select * from products order by product_price desc limit 10;
 select * from products order by product_category_id, product_price desc;
 
 #Using distribute by sort by (to distribute sorting and scale it up)
-select * from products distribute by product_category_id sort by product_category_id, product_price desc;
+select * from products distribute by product_category_id sort by product_price desc;
 
 #By key ranking (in Hive we can use windowing/analytic functions)
 select * from (select p.*, 

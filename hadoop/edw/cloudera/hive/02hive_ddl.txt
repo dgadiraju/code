@@ -67,34 +67,6 @@ PARTITIONED BY (order_month string)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
 STORED AS TEXTFILE;
 
-CREATE TABLE orders_part_avro (
-order_id int,
-order_date string,
-order_customer_id int,
-order_status string
-)
-PARTITIONED BY (order_month string)
-STORED AS AVRO
-LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/orders_part_avro'
-TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/orders_part_avro.avsc');
-
--- Adding partition manually
-alter table orders_part_avro add partition (order_month='2014-01');
-
--- Inserting data to a partition
-insert into table orders_part_avro partition (order_month='2014-01')
-select * from orders where from_unixtime(cast(substr(order_date, 1, 10) as int)) like '2014-01%';
-
--- Drop table and recreate to test dynamic insert
--- Dynamic insert
-set hive.exec.dynamic.partition.mode=nonstrict;
-insert into table orders_part_avro partition (order_month)
-select order_id, order_date, order_customer_id, order_status, from_unixtime(cast(substr(order_date, 1, 10) as int)) order_month from orders;
-
---validate
-dfs -ls /user/hive/warehouse/retail_stage.db/orders_part_avro/*
-dfs -ls /user/hive/warehouse/retail_stage.db/orders_part_avro/
-
 CREATE TABLE order_items (
 order_item_id int,
 order_item_order_id int,
@@ -212,7 +184,24 @@ OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
 LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/products'
 TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/sqoop_import_products.avsc');
 
--- Latest syntax using storead as avro
+-- Latest syntax using stored as avro
+-- Run the sqoop import 
+sqoop import-all-tables \
+  -m 12 \
+  --connect "jdbc:mysql://quickstart.cloudera:3306/retail_db" \
+  --username=retail_dba \
+  --password=cloudera \
+  --as-avrodatafile \
+  --warehouse-dir=/user/hive/warehouse/retail_stage.db
+
+-- It will create directories under warehouse-dir and copy data to that location
+-- The command will also generate avsc files for each of the table with sqoop_import_<table_name>.avsc
+-- Create directory in hdfs /user/cloudera/retail_stage
+-- Copy all avsc files using hadoop fs -put /<path>/*.avsc /user/cloudera/retail_stage
+-- Now you can create table in retail_stage db for all the data you have copied
+
+use retail_stage;
+
 CREATE EXTERNAL TABLE categories
 STORED AS AVRO
 LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/categories'
@@ -242,6 +231,35 @@ CREATE EXTERNAL TABLE products
 STORED AS AVRO
 LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/products'
 TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/sqoop_import_products.avsc');
+
+CREATE TABLE orders_part_avro (
+order_id int,
+order_date bigint,
+order_customer_id int,
+order_status string
+)
+PARTITIONED BY (order_month string)
+STORED AS AVRO
+LOCATION 'hdfs:///user/hive/warehouse/retail_stage.db/orders_part_avro'
+TBLPROPERTIES ('avro.schema.url'='hdfs://quickstart.cloudera/user/cloudera/retail_stage/orders_part_avro.avsc');
+
+-- Adding partition manually
+alter table orders_part_avro add partition (order_month='2014-01');
+
+-- Inserting data to a partition
+insert into table orders_part_avro partition (order_month='2014-01')
+select * from orders where from_unixtime(cast(substr(order_date, 1, 10) as int)) like '2014-01%';
+
+-- Drop table and recreate to test dynamic insert
+-- Dynamic insert
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert into table orders_part_avro partition (order_month)
+select order_id, order_date, order_customer_id, order_status,
+substr(from_unixtime(cast(substr(order_date, 1, 10) as int)), 1, 7) order_month from orders;
+
+--validate
+dfs -ls /user/hive/warehouse/retail_stage.db/orders_part_avro/*
+dfs -ls /user/hive/warehouse/retail_stage.db/orders_part_avro/
 
 CREATE TABLE departments_delta (
 department_id int,

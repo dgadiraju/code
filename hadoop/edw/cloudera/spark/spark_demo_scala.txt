@@ -238,12 +238,20 @@ val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
 val ordersMap = ordersRDD.map(rec => (rec.split(",")(3), 1))
 ordersMap.countByKey().foreach(println)
 
-#groupByKey is not very efficient
-ordersByStatus = ordersMap.groupByKey().map(t: (t(0), sum(t(1))))
-ordersByStatus = ordersMap.reduceByKey(acc, val: acc + val)
-ordersMap = ordersRDD.map(rec:  (rec.split(",")(3), rec))
-ordersByStatus = ordersMap.aggregateByKey(0, acc, val: acc+1, acc, val: acc+val)
-ordersByStatus = ordersMap.combineByKey(val: 1, acc, val: acc+1, acc, val: acc+val)
+#groupByKey is not very efficient for aggregations. It does not use combiner
+val ordersByStatus = ordersMap.groupByKey().map(t => (t._1, t._2.sum))
+
+#reduceByKey uses combiner - both reducer logic and combiner logic are same
+val ordersByStatus = ordersMap.reduceByKey((acc, value) => acc + value)
+
+#combineByKey can be used when reduce logic and combine logic are different
+#Both reduceByKey and combineByKey expects type of input data and output data are same
+val ordersByStatus = ordersMap.combineByKey(value => 1, (acc: Int, value: Int) => acc+value,  (acc: Int, value: Int) => acc+value)
+
+#aggregateByKey can be used when reduce logic and combine logic is different
+#Also type of input data and output data need not be same
+val ordersMap = ordersRDD.map(rec =>  (rec.split(",")(3), rec))
+val ordersByStatus = ordersMap.aggregateByKey(0, (acc, value) => acc+1, (acc, value) => acc+value)
 
 for recs in ordersByStatus.collect():
   print(recs)

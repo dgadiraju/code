@@ -252,31 +252,28 @@ val ordersByStatus = ordersMap.combineByKey(value => 1, (acc: Int, value: Int) =
 #Also type of input data and output data need not be same
 val ordersMap = ordersRDD.map(rec =>  (rec.split(",")(3), rec))
 val ordersByStatus = ordersMap.aggregateByKey(0, (acc, value) => acc+1, (acc, value) => acc+value)
-
-for recs in ordersByStatus.collect():
-  print(recs)
+ordersByStatus.collect().foreach(println)
 
 #Number of orders by order date and order status
 #Key orderDate and orderStatus
-ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-ordersMapRDD = ordersRDD.map(rec: ((rec.split(",")(1), rec.split(",")(3)), 1))
-ordersByStatusPerDay = ordersMapRDD.reduceByKey(v1, v2: v1+v2)
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val ordersMapRDD = ordersRDD.map(rec => ((rec.split(",")(1), rec.split(",")(3)), 1))
+val ordersByStatusPerDay = ordersMapRDD.reduceByKey((v1, v2) => v1+v2)
 
-for i in ordersByStatusPerDay.collect():
-  print(i)
+ordersByStatusPerDay.collect().foreach(println)
 
 #Total Revenue per day
-ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
-ordersParsedRDD = ordersRDD.map(rec: (rec.split(",")(0), rec))
-orderItemsParsedRDD = orderItemsRDD.map(rec: (rec.split(",")(1), rec))
+val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
+val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
 
-ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
-ordersJoinOrderItemsMap = ordersJoinOrderItems.map(t: (t(1)(1).split(",")(1), float(t(1)(0).split(",")(4))))
+val ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
+val ordersJoinOrderItemsMap = ordersJoinOrderItems.map(t => (t._2._2.split(",")(1), t._2._1.split(",")(4).toFloat))
 
-revenuePerDay = ordersJoinOrderItemsMap.reduceByKey(acc, val: acc + val)
-for i in revenuePerDay.collect(): print(i)
+val revenuePerDay = ordersJoinOrderItemsMap.reduceByKey((acc, value) => acc + value)
+revenuePerDay.collect().foreach(println)
 
 #average
 #average revenue per day
@@ -288,57 +285,50 @@ for i in revenuePerDay.collect(): print(i)
 #Parse data to discard order_id and get order_date as key and sum(order_item_subtotal) per order as value
 #Use appropriate aggregate function to get sum(order_item_subtotal) per day and count(distinct order_id) per day
 #Parse data and apply average logic
-ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
-ordersParsedRDD = ordersRDD.map(rec: (rec.split(",")(0), rec))
-orderItemsParsedRDD = orderItemsRDD.map(rec: (rec.split(",")(1), rec))
+val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
+val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
 
-ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
-ordersJoinOrderItemsMap = ordersJoinOrderItems.map(t: ((t(1)(1).split(",")(1), t(0)), float(t(1)(0).split(",")(4))))
+val ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
+val ordersJoinOrderItemsMap = ordersJoinOrderItems.map(t => ((t._2._2.split(",")(1), t._1), t._2._1.split(",")(4).toFloat))
 
-revenuePerDayPerOrder = ordersJoinOrderItemsMap.reduceByKey(acc, val: acc + val)
-revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(rec: (rec(0)(0), rec(1)))
+val revenuePerDayPerOrder = ordersJoinOrderItemsMap.reduceByKey((acc, value) => acc + value)
+val revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(rec => (rec._1._1, rec._2))
 
-revenuePerDayPerOrder = revenuePerDayPerOrderMap.combineByKey( \
-x: (x, 1), \
-acc, revenue: (acc(0) + revenue, acc(1) + 1), \
-total1, total2: (round(total1(0) + total2(0), 2), total1(1) + total2(1)) \
+val revenuePerDay = revenuePerDayPerOrderMap.aggregateByKey((0.0, 0))(
+(acc, revenue) => (acc._1 + revenue, acc._2 + 1), 
+(total1, total2) => (total1._1 + total2._1, total1._2 + total2._2) 
 )
 
-revenuePerDayPerOrder = revenuePerDayPerOrderMap.aggregateByKey( \
-(0, 0), \
-acc, revenue: (acc(0) + revenue, acc(1) + 1), \
-total1, total2: (round(total1(0) + total2(0), 2), total1(1) + total2(1)) \
-)
+revenuePerDay.collect().foreach(println)
 
-for data in revenuePerDayPerOrder.collect():
-  print(data)
-
-avgRevenuePerDay = revenuePerDayPerOrder.map(x: (x(0), x(1)(0)/x(1)(1)))
+val avgRevenuePerDay = revenuePerDay.map(x => (x._1, x._2._1/x._2._2))
 
 #Customer id with max revenue
-ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
-orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
+val ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
+val orderItemsRDD = sc.textFile("/user/cloudera/sqoop_import/order_items")
 
-ordersParsedRDD = ordersRDD.map(rec: (rec.split(",")(0), rec))
-orderItemsParsedRDD = orderItemsRDD.map(rec: (rec.split(",")(1), rec))
+val ordersParsedRDD = ordersRDD.map(rec => (rec.split(",")(0), rec))
+val orderItemsParsedRDD = orderItemsRDD.map(rec => (rec.split(",")(1), rec))
 
-ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
-ordersPerDayPerCustomer = ordersJoinOrderItems.map(rec: ((rec(1)(1).split(",")(1), rec(1)(1).split(",")(2)), float(rec(1)(0).split(",")(4))))
-revenuePerDayPerCustomer = ordersPerDayPerCustomer.reduceByKey(x, y: x + y)
+val ordersJoinOrderItems = orderItemsParsedRDD.join(ordersParsedRDD)
+val ordersPerDayPerCustomer = ordersJoinOrderItems.map(rec => ((rec._2._2.split(",")(1), rec._2._2.split(",")(2)), rec._2._1.split(",")(4).toFloat))
+val revenuePerDayPerCustomer = ordersPerDayPerCustomer.reduceByKey((x, y) => x + y)
 
-revenuePerDayPerCustomerMap = revenuePerDayPerCustomer.map(rec: (rec(0)(0), (rec(0)(1), rec(1))))
-topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey(x, y: (x if x(1) >= y(1) else y))
+val revenuePerDayPerCustomerMap = revenuePerDayPerCustomer.map(rec => (rec._1._1, (rec._1._2, rec._2)))
+val topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey((x, y) => (if(x._2 >= y._2) x else y))
 
 #Using regular function
-def findMax(x, y):
-  if(x(1) >= y(1)):
+def findMax(x: (String, Float), y: (String, Float)): (String, Float) = {
+  if(x._2 >= y._2)
     return x
-  else:
+  else
     return y
+}
 
-topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey(x, y: findMax(x, y))
+val topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey((x, y) => findMax(x, y))
 
 # Using Hive Context
 from pyspark.sql import HiveContext

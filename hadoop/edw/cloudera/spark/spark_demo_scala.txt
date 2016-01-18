@@ -19,21 +19,46 @@ sqlContext.load("jdbc", Map(
   "dbtable" -> "departments")).collect().foreach(println)
 
 ##############################################################################
+#Install sbt
+#Download the tar file of sbt, untar and set environment variable SBT_HOME
+#Update PATH
 
 #Developing simple scala based applications for spark
-#Save this to a file with py extension
+#Save this to a file with scala extension
+#Compile into jar file
+cd
+mkdir scala
+cd scala; mkdir -p src/main/scala
+
+#Copy below 4 lines into simple.sbt
+name := "Simple Project"
+version := "1.0"
+scalaVersion := "2.10.4"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "1.2.1"
+
+#Copy below 9 lines into src/main/scala/SimpleApp.scala
 import org.apache.spark.SparkContext, org.apache.spark.SparkConf
-val conf = new SparkConf().setAppName("scala spark")
-val sc = new SparkContext(conf)
-val dataRDD = sc.textFile("/user/cloudera/sqoop_import/departments")
-dataRDD.saveAsTextFile("/user/cloudera/scalaspark/departmentsTesting")
+object SimpleApp {
+  def main(args: Array[String]) {
+    val conf = new SparkConf().setAppName("scala spark")
+    val sc = new SparkContext(conf)
+    val dataRDD = sc.textFile("/user/cloudera/sqoop_import/departments")
+    dataRDD.saveAsTextFile("/user/cloudera/scalaspark/departmentsTesting")
+  }
+}
+
+#Build package
+sbt package
 
 #Run using this command
-#master local will run in spark native mode
-#Todo
+#master local will run in spark local mode
+spark-submit --class "SimpleApp" --master local /home/cloudera/scala/target/scala-2.10/simple-project_2.10-1.0.jar
 
 #master yarn will run in yarn mode
-#Todo
+spark-submit --class "SimpleApp" --master yarn /home/cloudera/scala/target/scala-2.10/simple-project_2.10-1.0.jar
+
+#Validate
+hadoop fs -ls /user/cloudera/scalaspark/departmentsTesting
 
 ##############################################################################
 
@@ -331,25 +356,11 @@ def findMax(x: (String, Float), y: (String, Float)): (String, Float) = {
 val topCustomerPerDaybyRevenue = revenuePerDayPerCustomerMap.reduceByKey((x, y) => findMax(x, y))
 
 # Using Hive Context
-from pyspark.sql import HiveContext
-hiveContext = HiveContext(sc)
+import org.apache.spark.sql.hive.HiveContext
+val hiveContext = new HiveContext(sc)
 hiveContext.sql("set spark.sql.shuffle.partitions=10");
 
-data = hiveContext.sql(" \
-select * from ( \
-select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal \
-from orders o join order_items oi \
-on o.order_id = oi.order_item_order_id \
-group by o.order_date, o.order_customer_id) q1 \
-join \
-(select q.order_date, max(q.order_item_subtotal) order_item_subtotal \
-from (select o.order_date, o.order_customer_id, sum(oi.order_item_subtotal) order_item_subtotal \
-from orders o join order_items oi \
-on o.order_id = oi.order_item_order_id \
-group by o.order_date, o.order_customer_id) q \
-group by q.order_date) q2 \
-on q1.order_date = q2.order_date and q1.order_item_subtotal = q2.order_item_subtotal \
-order by q1.order_date")
+hiveContext.sql("select o.order_date, sum(oi.order_item_subtotal)/count(distinct oi.order_item_order_id) from orders o join order_items oi on o.order_id = oi.order_item_order_id group by o.order_date order by o.order_date").collect().foreach(println)
 
 # This query works in hive
 select * from (select q.order_date, q.order_customer_id, q.order_item_subtotal, 

@@ -21,7 +21,7 @@ sqoop import-all-tables \
   --username=retail_dba \
   --password=hadoop \
   --as-avrodatafile \
-  --warehouse-dir=/user/hive/warehouse/retail_stage.db
+  --warehouse-dir=/apps/hive/warehouse/retail_stage.db
 
 --Default
 sqoop import \
@@ -73,12 +73,12 @@ drop table order_items;
 drop table customers;
 
 -- Dropping directories, in case your hive database/tables in consistent state
-hadoop fs -rm -R /user/hive/warehouse/departments
-hadoop fs -rm -R /user/hive/warehouse/categories
-hadoop fs -rm -R /user/hive/warehouse/products
-hadoop fs -rm -R /user/hive/warehouse/orders 
-hadoop fs -rm -R /user/hive/warehouse/order_itmes
-hadoop fs -rm -R /user/hive/warehouse/customers
+hadoop fs -rm -R /apps/hive/warehouse/departments
+hadoop fs -rm -R /apps/hive/warehouse/categories
+hadoop fs -rm -R /apps/hive/warehouse/products
+hadoop fs -rm -R /apps/hive/warehouse/orders 
+hadoop fs -rm -R /apps/hive/warehouse/order_itmes
+hadoop fs -rm -R /apps/hive/warehouse/customers
 
 sqoop import-all-tables \
   --num-mappers 1 \
@@ -133,7 +133,7 @@ sqoop import \
   --username=retail_dba \
   --password=hadoop \
   --table departments \
-  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
   --append \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
@@ -149,7 +149,7 @@ sqoop import \
   --username=retail_dba \
   --password=hadoop \
   --table departments \
-  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
   --append \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
@@ -162,7 +162,7 @@ sqoop import \
   --username=retail_dba \
   --password=hadoop \
   --table departments \
-  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
   --append \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
@@ -176,7 +176,7 @@ sqoop import \
   --username=retail_dba \
   --password=hadoop \
   --table departments \
-  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
   --append \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
@@ -191,7 +191,7 @@ sqoop job --create sqoop_job \
   --username=retail_dba \
   --password=hadoop \
   --table departments \
-  --target-dir /user/hive/warehouse/retail_ods.db/departments \
+  --target-dir /apps/hive/warehouse/retail_ods.db/departments \
   --append \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
@@ -215,7 +215,7 @@ sqoop import \
   --table departments \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
-  --hive-home /user/hive/warehouse/retail_ods.db \
+  --hive-home /apps/hive/warehouse/retail_ods.db \
   --hive-import \
   --hive-overwrite \
   --hive-table departments \
@@ -229,7 +229,7 @@ sqoop import \
   --table departments \
   --fields-terminated-by '|' \
   --lines-terminated-by '\n' \
-  --hive-home /user/hive/warehouse \
+  --hive-home /apps/hive/warehouse \
   --hive-import \
   --hive-table departments_test \
   --create-hive-table \
@@ -250,7 +250,7 @@ sqoop export --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_rpt_db"
        --username retail_dba \
        --password hadoop \
        --table departments \
-       --export-dir /user/hive/warehouse/retail_ods.db/departments \
+       --export-dir /apps/hive/warehouse/retail_ods.db/departments \
        --input-fields-terminated-by '|' \
        --input-lines-terminated-by '\n' \
        --num-mappers 2 \
@@ -272,7 +272,7 @@ sqoop export --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
   --username retail_dba \
   --password hadoop \
   --table departments_test \
-  --export-dir /user/hive/warehouse/departments_test \
+  --export-dir /apps/hive/warehouse/departments_test \
   --input-fields-terminated-by '\001' \
   --input-lines-terminated-by '\n' \
   --num-mappers 2 \

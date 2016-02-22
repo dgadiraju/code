@@ -3,7 +3,7 @@ sqoop list-databases \
   --username retail_dba \
   --password hadoop
 
-sqoop list-tables \ 
+sqoop list-tables \
   --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
   --username retail_dba \
   --password hadoop

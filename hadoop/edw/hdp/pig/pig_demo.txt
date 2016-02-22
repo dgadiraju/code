@@ -2,8 +2,8 @@
 set io.sort.mb 256M;
 
 -- lca count - COUNT_STAR is built-in UDF, check docs for list of built-in UDFs
--- select count(1) from lca.lca_details_text_delimited;
-department_rows = LOAD '/apps/hive/warehouse/retail_ods.db/departments' ;
+-- select count(1) from retail_stage.departments
+department_rows = LOAD '/apps/hive/warehouse/retail_stage.db/departments' ;
 department_group = GROUP department_rows ALL;
 department_count = FOREACH department_group GENERATE COUNT_STAR(department_rows) as ct;
 DUMP department_count;

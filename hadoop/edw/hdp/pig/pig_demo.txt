@@ -1,6 +1,35 @@
 -- Setting configuration at run time
 set io.sort.mb 256M;
 
+-- Create pig_demo.txt file with the following text.
+This will have some text to test word count program using pig script.
+
+This will also used to demonstrate to get started using pig in Hadoop eco system.
+
+-- Getting started
+load_data = LOAD '/user/root/pig_demo.txt';
+DUMP load_data;
+
+-- Create script pig_demo.pig
+-- Launch grunt
+-- Run script using "exec pig_demo.pig", one can use absolute or relative path
+-- Also you can run pig scripts using "pig -f pig_demo.pig" (either by using absolute or relative path)
+
+-- Load data into a Pig relation without a schema
+lines = LOAD '/user/root/pig_demo.txt' AS (line:chararray);
+words = FOREACH lines GENERATE FLATTEN(TOKENIZE(line)) as word;
+grouped = GROUP words BY word;
+wordcount = FOREACH grouped GENERATE group, COUNT(words);
+DUMP wordcount;
+
+-- Run the sqoop command, to load data into sqoop_import directory in HDFS.
+sqoop import-all-tables \
+  -m 1 \
+  --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
+  --username=retail_dba \
+  --password=hadoop \
+  --warehouse-dir /user/root/sqoop_import
+
 -- lca count - COUNT_STAR is built-in UDF, check docs for list of built-in UDFs
 -- select count(1) from retail_stage.departments
 department_rows = LOAD '/user/root/sqoop_import/departments' ;

@@ -15,7 +15,7 @@ DUMP load_data;
 -- Run script using "exec pig_demo.pig", one can use absolute or relative path
 -- Also you can run pig scripts using "pig -f pig_demo.pig" (either by using absolute or relative path)
 
--- Load data into a Pig relation without a schema
+-- Word count program
 lines = LOAD '/user/root/pig_demo.txt' AS (line:chararray);
 words = FOREACH lines GENERATE FLATTEN(TOKENIZE(line)) as word;
 grouped = GROUP words BY word;
@@ -29,6 +29,28 @@ sqoop import-all-tables \
   --username=retail_dba \
   --password=hadoop \
   --warehouse-dir /user/root/sqoop_import
+
+-- Load data into a Pig relation without a schema
+departments = LOAD '/user/root/sqoop_import/departments' USING PigStorage(',');
+DESCRIBE departments;
+
+department_id = FOREACH departments GENERATE $1;
+DESCRIBE department_id;
+
+-- Cast elements in department_id to integer
+department_id = FOREACH departments GENERATE (int) $1;
+DESCRIBE department_id;
+
+DUMP department_id;
+
+-- Load data into a Pig relation with a schema
+departments = LOAD '/user/root/sqoop_import/departments' USING PigStorage(',') AS (department_id:int, department_name:chararray);
+DESCRIBE departments;
+
+department_id = FOREACH departments GENERATE department_id;
+DESCRIBE department_id;
+
+DUMP department_id;
 
 -- lca count - COUNT_STAR is built-in UDF, check docs for list of built-in UDFs
 -- select count(1) from retail_stage.departments

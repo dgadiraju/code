@@ -80,3 +80,86 @@ customer_details_hive = LOAD 'xademo.customer_details' USING org.apache.hive.hca
 customer_details_not_null = FILTER customer_details_hive BY (imei != '');
 DUMP customer_details_not_null;
 
+-- Store the data from a Pig relation into a folder in HDFS
+-- Launch grunt using "pig"
+-- Validate, by running "fs -ls /user/root/sqoop_import"
+departments = LOAD '/user/root/sqoop_import/departments';
+STORE departments INTO '/user/root/pig_demo/departments';
+-- Validate "fs -cat /user/root/pig_demo/departments/part*"
+
+-- Changing the delimiter
+-- Delete target directory if exists "fs -rm -R /user/root/pig_demo/departments"
+departments = LOAD '/user/root/sqoop_import/departments' USING PigStorage(',');
+STORE departments INTO '/user/root/pig_demo/departments' USING PigStorage('|');
+-- Validate
+-- Both source and target files are of text format
+
+-- Changing file type (from text to binary)
+departments = LOAD '/user/root/sqoop_import/departments' USING PigStorage(',');
+STORE departments INTO '/user/root/pig_demo/departments' USING BinStorage('|');
+-- Validate
+departments_bin = LOAD '/user/root/pig_demo/departments' USING BinStorage('|');
+DUMP departments_bin;
+
+-- Store the data from a Pig relation into a Hive table
+-- Launch hive using "hive"
+-- Create Hive database
+create database pig_demo;
+use pig_demo;
+
+-- Create Hive tables
+create table departments (department_id int, department_name string);
+
+create table categories (category_id int, category_department_id int, category_name string);
+
+create table customers (customer_id int, 
+  customer_fname string, 
+  customer_lname string, 
+  customer_email string, 
+  customer_password string, 
+  customer_street string, 
+  customer_city string, 
+  customer_state string, 
+  customer_zipcode string);
+
+create table order_items (order_item_id int,
+  order_item_order_id int,
+  order_item_product_id int,
+  order_item_quantity int,
+  order_item_subtotal float,
+  order_item_product_price float);
+
+create table orders (order_id int,
+  order_id int,
+  order_date string,
+  order_customer_id int,
+  order_status string);
+
+create table products (product_id int,
+  product_category_id int,
+  product_name string,
+  product_description string,
+  product_price float,
+  product_image string);
+
+-- Loading into hive tables
+-- Launch pig using "pig -useHCatalog"
+-- Loading data into hive tables
+departments = LOAD '/user/root/sqoop_import/departments' USING PigStorage(',') AS (department_id: int, department_name: chararray);
+STORE departments INTO 'pig_demo.departments' USING org.apache.hive.hcatalog.pig.HCatStorer();
+-- Validate, go to hive and run "select * from departments" (make sure you are using right database pig_demo)
+
+categories = LOAD '/user/root/sqoop_import/categories' USING PigStorage(',') AS (categor_id: int, category_department_id: int, category_name: chararray);
+STORE categories INTO 'pig_demo.categories' USING org.apache.hive.hcatalog.pig.HCatStorer();
+
+customers = LOAD '/user/root/sqoop_import/customers' USING PigStorage(',') AS (customer_id: int, customer_fname: chararray, customer_lname: chararray, customer_email: chararray, customer_password: chararray, customer_street: chararray, customer_city: chararray, customer_state: chararray, customer_zipcode: chararray);
+STORE customers INTO 'pig_demo.customers' USING org.apache.hive.hcatalog.pig.HCatStorer();
+
+order_items = LOAD '/user/root/sqoop_import/order_items' USING PigStorage(',') AS (order_item_id: int, order_item_order_id: int, order_item_product_id: int, order_item_quantity: int, order_item_subtotal: float, order_item_product_price: float);
+STORE order_items INTO 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatStorer();
+
+orders = LOAD '/user/root/sqoop_import/orders' USING PigStorage(',') AS (order_id: int, order_date: chararray, order_customer_id: int, order_status: chararray);
+STORE orders INTO 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatStorer();
+
+products = LOAD '/user/root/sqoop_import/products' USING PigStorage(',') AS (product_id: int, product_category_id: int, product_name: chararray, product_description: chararray, product_price: float, product_image: chararray);
+STORE products INTO 'pig_demo.products' USING org.apache.hive.hcatalog.pig.HCatStorer();

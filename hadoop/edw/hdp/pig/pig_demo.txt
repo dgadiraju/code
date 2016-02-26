@@ -130,7 +130,6 @@ create table order_items (order_item_id int,
   order_item_product_price float);
 
 create table orders (order_id int,
-  order_id int,
   order_date string,
   order_customer_id int,
   order_status string);

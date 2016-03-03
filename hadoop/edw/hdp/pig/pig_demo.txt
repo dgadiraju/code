@@ -214,6 +214,9 @@ DUMP orderstatus;
 -- Specify the number of reduce tasks for a Pig MapReduce job
 
 -- Join two datasets using Pig
+-- select o.order_date, sum(oi.order_item_subtotal) from orders o join order_items oi
+-- on o.order_id = oi.order_item_order_id
+-- group by o.order_date;
 orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
 order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
 ordersjoin = JOIN orders BY order_id, order_items BY order_item_order_id;

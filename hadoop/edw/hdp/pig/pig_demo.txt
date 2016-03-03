@@ -64,6 +64,41 @@ customer_details_wo_schema = LOAD '/apps/hive/warehouse/xademo.db/customer_detai
 customer_details_not_null = FILTER customer_details_wo_schema BY ($5 is not null);
 DUMP customer_details_not_null;
 
+-- Use Pig to transform data into a specified format
+-- Transform data to match a given Hive schema
+
+-- Group the data of one or more Pig relations
+-- Make sure you create hive database pig_demo, create all tables and load data into them using pig
+-- It is under the section of "Store the data from a Pig relation into a Hive table"
+
+-- GROUP ALL (select count(*) from xademo.customer_details)
+customer_details = LOAD 'xademo.customer_details' USING org.apache.hive.hcatalog.pig.HCatLoader();
+customer_details_grouped = GROUP customer_details ALL;
+customer_details_count = FOREACH customer_details_grouped GENERATE COUNT_STAR(customer_details) AS cnt;
+DUMP customer_details_count;
+
+-- GROUP ALL (select count(*) from xademo.customer_details where imei is not null)
+customer_details = LOAD 'xademo.customer_details' USING org.apache.hive.hcatalog.pig.HCatLoader();
+customer_details_filtered = FILTER customer_details BY (imei != '');
+customer_details_grouped = GROUP customer_details_filtered ALL;
+customer_details_count = FOREACH customer_details_grouped GENERATE COUNT_STAR(customer_details) AS cnt;
+DUMP customer_details_count;
+
+-- GROUP ALL by position (with out schema)
+customer_details = LOAD '/apps/hive/warehouse/xademo.db/customer_details' USING PigStorage('|');
+customer_details_not_null = FILTER customer_details_wo_schema BY ($5 is not null);
+customer_details_grouped = GROUP customer_details_not_null ALL;
+customer_details_count = FOREACH customer_details_grouped GENERATE COUNT_STAR(customer_details) AS cnt;
+DUMP customer_details_count;
+
+-- GROUP BY (select order_status, count(1) from orders group by order_status)
+-- Make sure you have pig_demo db, retail_db tables and data in Hive
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersgrouped = GROUP orders BY order_status;
+DESCRIBE ordersgrouped
+orderscount = FOREACH ordersgrouped GENERATE group, COUNT(orders) AS cnt;
+DUMP orderscount;
+
 -- Filter with schema using positional notation
 customer_details_with_schema = LOAD '/apps/hive/warehouse/xademo.db/customer_details' USING PigStorage('|') AS (phone_number: chararray,plan: chararray,rec_date: chararray,status: chararray,balance: chararray,imei: chararray,region: chararray);
 customer_details_not_null = FILTER customer_details_with_schema BY ($5 is not null);
@@ -162,3 +197,29 @@ STORE orders INTO 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatStore
 
 products = LOAD '/user/root/sqoop_import/products' USING PigStorage(',') AS (product_id: int, product_category_id: int, product_name: chararray, product_description: chararray, product_price: float, product_image: chararray);
 STORE products INTO 'pig_demo.products' USING org.apache.hive.hcatalog.pig.HCatStorer();
+
+-- Sort the output of a Pig relation
+-- select * from departments order by department_id;
+departments = LOAD 'pig_demo.departments' USING org.apache.hive.hcatalog.pig.HCatStorer();
+orderby = ORDER departments BY department_id;
+orderbydesc = ORDER departments BY department_id DESC;
+
+-- Remove the duplicate tuples of a Pig relation
+-- select distinct order_status from orders;
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+orderstatus = FOREACH orders GENERATE order_status;
+orderstatusdistinct = DISTINCT orderstatus;
+DUMP orderstatus;
+
+-- Specify the number of reduce tasks for a Pig MapReduce job
+
+-- Join two datasets using Pig
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersjoin = JOIN orders BY order_id, order_items BY order_item_order_id;
+DESCRIBE ordersjoin;
+orderdatewithrevenuebyorder = FOREACH ordersjoin GENERATE orders::order_date, order_items::order_item_subtotal;
+orderdatewithrevenuebyordergrouped = GROUP orderdatewithrevenuebyorder BY orders::order_date;
+revenuebydate = FOREACH orderdatewithrevenuebyordergrouped GENERATE group, SUM(orderdatewithrevenuebyorder.order_items::order_item_subtotal) AS revenue_per_day;
+DUMP revenuebydate;
+

@@ -88,7 +88,7 @@ DUMP customer_details_count;
 customer_details = LOAD '/apps/hive/warehouse/xademo.db/customer_details' USING PigStorage('|');
 customer_details_not_null = FILTER customer_details_wo_schema BY ($5 is not null);
 customer_details_grouped = GROUP customer_details_not_null ALL;
-customer_details_count = FOREACH customer_details_grouped GENERATE COUNT_STAR(customer_details) AS cnt;
+customer_details_count = FOREACH customer_details_grouped GENERATE COUNT_STAR(customer_details_filtered) AS cnt;
 DUMP customer_details_count;
 
 -- GROUP BY (select order_status, count(1) from orders group by order_status)

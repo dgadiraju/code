@@ -200,7 +200,7 @@ STORE products INTO 'pig_demo.products' USING org.apache.hive.hcatalog.pig.HCatS
 
 -- Sort the output of a Pig relation
 -- select * from departments order by department_id;
-departments = LOAD 'pig_demo.departments' USING org.apache.hive.hcatalog.pig.HCatStorer();
+departments = LOAD 'pig_demo.departments' USING org.apache.hive.hcatalog.pig.HCatLoader();
 orderby = ORDER departments BY department_id;
 orderbydesc = ORDER departments BY department_id DESC;
 

@@ -377,45 +377,6 @@ order by q1.order_date;
 
 ##########################################################################################
 
-# Using data frames (only works with spark 1.3.0 or later)
-val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-import sqlContext.implicits._
-sqlContext.sql("set spark.sql.shuffle.partitions=10");
-
-case class Orders(orderId: Int, orderDate: String, orderCustomerId: Int, orderStatus: String)
-
-val orders = sc.textFile("/user/cloudera/sqoop_import/orders").
-  map(rec => rec.split(",")).
-  map(o => Orders(o(0).toInt, o(1), o(2).toInt, o(3))).toDF()
-
-orders.registerTempTable("orders")
-val ordersData = sqlContext.sql("select * from orders")
-ordersData.collect().take(10).foreach(println)
-
-case class OrderItems
-  (orderItemId: Int, 
-   orderItemOrderId: Int, 
-   orderItemProductId: Int, 
-   orderItemQuantity: Int, 
-   orderItemSubtotal: Float, 
-   orderItemProductPrice: Float
-  )
-
-val orderItems = sc.textFile("/user/cloudera/sqoop_import/order_items").
-  map(rec => rec.split(",")).
-  map(oi => OrderItems(oi(0).toInt, oi(1).toInt, oi(2).toInt, oi(3).toInt, oi(4).toFloat, oi(5).toFloat)).
-  toDF()
-
-orderItems.registerTempTable("orderItems")
-val orderItemsData = sqlContext.sql("select * from orderItems")
-orderItemsData.collect().take(10).foreach(println)
-
-val ordersJoinOrderItems = sqlContext.sql("select o.orderDate, sum(oi.orderItemSubtotal), count(o.orderId) from orders o join orderItems oi on o.orderId = oi.orderItemOrderId group by o.orderDate")
-val ordersJoinOrderItems = sqlContext.sql("select o.orderDate, sum(oi.orderItemSubtotal), count(distinct o.orderId), sum(oi.orderItemSubtotal)/count(distinct o.orderId) from orders o join orderItems oi on o.orderId = oi.orderItemOrderId group by o.orderDate order by o.orderDate")
-ordersJoinOrderItems.collect().take(10).foreach(println)
-
-##########################################################
-
 # Filter data into a smaller dataset using Spark
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")
 for i in ordersRDD.filter(lambda line: line.split(",")[3] == "COMPLETE").take(5): print(i)

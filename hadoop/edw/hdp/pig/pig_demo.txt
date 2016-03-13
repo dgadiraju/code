@@ -226,3 +226,49 @@ orderdatewithrevenuebyordergrouped = GROUP orderdatewithrevenuebyorder BY orders
 revenuebydate = FOREACH orderdatewithrevenuebyordergrouped GENERATE group, SUM(orderdatewithrevenuebyorder.order_items::order_item_subtotal) AS revenue_per_day;
 DUMP revenuebydate;
 
+-- Left outer join
+-- select * from orders o left outer join order_items oi 
+-- on o.order_id = oi.order_item_order_id 
+-- where oi.order_item_id is null;
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersleftjoin = JOIN orders BY order_id LEFT OUTER, order_items BY order_item_order_id;
+ordersfiltered = FILTER ordersleftjoin BY order_items::order_item_id IS NULL;
+DUMP ordersfiltered;
+
+orders = LOAD '/user/root/sqoop_import/orders' USING PigStorage(',') AS (order_id: int, order_date: chararray, order_customer_id: int, order_status: chararray);
+order_items = LOAD '/user/root/sqoop_import/order_items' USING PigStorage(',') AS (order_item_id: int, order_item_order_id: int, order_item_product_id: int, order_item_quantity: int, order_item_subtotal: float, order_item_product_price: float);
+ordersleftjoin = JOIN orders BY order_id LEFT OUTER, order_items BY order_item_order_id;
+ordersfiltered = FILTER ordersleftjoin BY order_items::order_item_id IS NULL;
+DUMP ordersfiltered;
+
+orders = LOAD '/user/root/sqoop_import/orders' USING PigStorage(',');
+order_items = LOAD '/user/root/sqoop_import/order_items' USING PigStorage(',');
+ordersleftjoin = JOIN orders BY $0 LEFT OUTER, order_items BY $1;
+-- If you DUMP or try to perform other operations on ordersleftjoin it will fail as there is no schema on the relations.
+-- JOINS work only when schema is defined for relations.
+
+-- Counting
+grouped = GROUP ordersfiltered ALL;
+counted = FOREACH grouped GENERATE COUNT_STAR(ordersfiltered);
+DUMP counted;
+
+-- Right outer join
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersrightjoin = JOIN orders BY order_id RIGHT OUTER, order_items BY order_item_order_id;
+ordersfiltered = FILTER ordersrightjoin BY orders::order_id IS NULL;
+DUMP ordersfiltered;
+grouped = GROUP ordersfiltered ALL;
+counted = FOREACH grouped GENERATE COUNT_STAR(ordersfiltered);
+DUMP counted;
+
+-- Full outer join
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersfulljoin = JOIN orders BY order_id FULL OUTER, order_items BY order_item_order_id;
+ordersfiltered = FILTER ordersfulljoin BY order_items::order_item_id IS NULL;
+DUMP ordersfiltered;
+grouped = GROUP ordersfiltered ALL;
+counted = FOREACH grouped GENERATE COUNT_STAR(ordersfiltered);
+DUMP counted;

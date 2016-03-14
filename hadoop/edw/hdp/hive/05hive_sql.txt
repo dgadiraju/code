@@ -1,0 +1,33 @@
+-- Using all HiveQL/SQL clauses
+-- Get number of orders by order_status for a given date '2013-12-14'
+SELECT order_status, count(1) FROM orders
+WHERE order_date = '2013-12-14 00:00:00.0'
+GROUP BY order_status
+ORDER BY order_status;
+
+-- Get number of completed orders for each date before '2013-12-14 00:00:00.0'
+SELECT order_date, count(1) FROM orders
+WHERE order_date <= '2013-12-14 00:00:00.0' AND order_status = 'COMPLETE'
+GROUP BY order_date
+ORDER BY order_date;
+
+-- Get number of pending, review and onhold order for each date for the month of 2013 December
+SELECT order_date, count(1) FROM orders
+WHERE order_date LIKE '2013-12%' AND order_status IN ('PENDING', 'PENDING_PAYMENT', 'PAYMENT_REVIEW', 'ON_HOLD')
+-- order_date LIKE '2013-12%' AND (order_status = 'PENDING' or order_status = 'PENDING_PAYMENT'....)
+GROUP BY order_date
+ORDER BY order_date;
+
+--Incorrect query
+SELECT order_date, count(1) FROM orders
+WHERE order_date BETWEEN '2013-12-01 00:00:00.0' AND '2013-12-31 00:00:00.0'
+AND order_status LIKE 'PENDING%' OR order_status IN ('PAYMENT_REVIEW', 'ON_HOLD')
+GROUP BY order_date
+ORDER BY order_date;
+
+--Correct alternative query
+SELECT order_date, count(1) FROM orders
+WHERE order_date BETWEEN '2013-12-01 00:00:00.0' AND '2013-12-31 00:00:00.0'
+AND (order_status LIKE 'PENDING%' OR order_status IN ('PAYMENT_REVIEW', 'ON_HOLD'))
+GROUP BY order_date
+ORDER BY order_date;

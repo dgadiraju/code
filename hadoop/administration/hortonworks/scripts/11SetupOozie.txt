@@ -1,8 +1,11 @@
 #0. Steps required to set up oozie repository in mysql
+#On host where oozie server runs, install mysql-connector-java
 sudo yum install mysql-connector-java
-ln -s /usr/share/java/mysql-connector-java.jar /var/lib/oozie/mysql-connector-java.jar
-#For HDP run this command on the server where you want to setup oozie server
-ambari-server setup --jdbc-db=mysql --jdbc-driver=/usr/share/java/mysql-connector-java.jar
+sudo ln -s /usr/share/java/mysql-connector-java.jar /var/lib/oozie/mysql-connector-java.jar
+
+#For HDP run this command on the server where ambari server is running
+sudo yum install mysql-connector-java
+sudo ambari-server setup --jdbc-db=mysql --jdbc-driver=/usr/share/java/mysql-connector-java.jar
 
 #Go to the host where mysql database is running
 mysql -u root -p

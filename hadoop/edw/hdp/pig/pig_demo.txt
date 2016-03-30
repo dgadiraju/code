@@ -208,10 +208,24 @@ orderbydesc = ORDER departments BY department_id DESC;
 -- select distinct order_status from orders;
 orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
 orderstatus = FOREACH orders GENERATE order_status;
+grouped = GROUP orderstatus BY order_status;
+orderstatusdistinct = FOREACH grouped {
+  odistinct = DISTINCT orderstatus.order_status;
+  GENERATE FLATTEN(odistinct);
+};
+DUMP orderstatusdistinct;
+
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+orderstatus = FOREACH orders GENERATE order_status;
 orderstatusdistinct = DISTINCT orderstatus;
-DUMP orderstatus;
+DUMP orderstatusdistinct;
 
 -- Specify the number of reduce tasks for a Pig MapReduce job
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersgrouped = GROUP orders BY order_status PARALLEL 2;
+DESCRIBE ordersgrouped
+orderscount = FOREACH ordersgrouped GENERATE group, COUNT(orders) AS cnt;
+DUMP orderscount;
 
 -- Join two datasets using Pig
 -- select o.order_date, sum(oi.order_item_subtotal) from orders o join order_items oi

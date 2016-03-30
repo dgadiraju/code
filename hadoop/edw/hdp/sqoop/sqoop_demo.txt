@@ -229,6 +229,16 @@ sqoop import \
   --hive-table departments \
   --outdir java_files
 
+sqoop import \
+  --connect "jdbc:mysql://<host_name_here>:3306/retail_db" \
+  --username=retail_dba \
+  --password=itversity \
+  --table departments \
+  --hive-home /user/hive/warehouse \
+  --hive-import \
+  --hive-table sqoop_demo.departments_dg \
+  --create-hive-table
+
 --Create hive table example
 sqoop import \
   --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \

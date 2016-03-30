@@ -234,7 +234,7 @@ DUMP orderscount;
 orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
 order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
 ordersjoin = JOIN orders BY order_id, order_items BY order_item_order_id;
-DESCRIBE ordersjoin;
+-- DESCRIBE ordersjoin;
 orderdatewithrevenuebyorder = FOREACH ordersjoin GENERATE orders::order_date, order_items::order_item_subtotal;
 orderdatewithrevenuebyordergrouped = GROUP orderdatewithrevenuebyorder BY orders::order_date;
 revenuebydate = FOREACH orderdatewithrevenuebyordergrouped GENERATE group, SUM(orderdatewithrevenuebyorder.order_items::order_item_subtotal) AS revenue_per_day;
@@ -286,3 +286,17 @@ DUMP ordersfiltered;
 grouped = GROUP ordersfiltered ALL;
 counted = FOREACH grouped GENERATE COUNT_STAR(ordersfiltered);
 DUMP counted;
+
+-- Perform a replicated join using Pig
+-- select o.order_date, sum(oi.order_item_subtotal) from orders o join order_items oi
+-- on o.order_id = oi.order_item_order_id
+-- group by o.order_date;
+orders = LOAD 'pig_demo.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+order_items = LOAD 'pig_demo.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
+ordersjoin = JOIN orders BY order_id, order_items BY order_item_order_id USING 'replicated';
+--DESCRIBE ordersjoin;
+orderdatewithrevenuebyorder = FOREACH ordersjoin GENERATE orders::order_date, order_items::order_item_subtotal;
+orderdatewithrevenuebyordergrouped = GROUP orderdatewithrevenuebyorder BY orders::order_date;
+revenuebydate = FOREACH orderdatewithrevenuebyordergrouped GENERATE group, SUM(orderdatewithrevenuebyorder.order_items::order_item_subtotal) AS revenue_per_day;
+DUMP revenuebydate;
+

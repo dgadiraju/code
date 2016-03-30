@@ -15,6 +15,14 @@ sqoop eval \
   --query "select count(1) from order_items"
 
 -- Reference: http://www.hadoop.com/content/hadoop/en/developers/home/developer-admin-resources/get-started-with-hadoop-tutorial/exercise-1.html
+
+sqoop import-all-tables \
+  --connect "jdbc:mysql://cdh54itversity-mn0.southeastasia.cloudapp.azure.com:3306/retail_db" \
+  --username retail_dba \
+  --password itversity \
+  --warehouse-dir /user/itversity/dgadiraju/import-all-tables \
+  --driver com.mysql.jdbc.Driver
+
 sqoop import-all-tables \
   -m 12 \
   --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \

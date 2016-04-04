@@ -26,6 +26,36 @@ LOCATION '/apps/hive/warehouse/cards.db/deck_of_cards';
 -- CREATE DATABASE retail_edw;
 -- CREATE DATABASE retail_stage;
 
+-- HDPCD - Define a Hive-managed table 
+USE retail_stage;
+CREATE TABLE orders_demo (
+order_id int,
+order_date string,
+order_customer_id int,
+order_status string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+-- HDPCD - Define a Hive external table
+-- Download the data from github, unzip and copy deckofcards.txt 
+-- Run on terminal on your PC/Mac to copy data to sandbox
+-- scp ./Documents/Training/GoogleDrive/Training/data/cards/deckofcards.txt root@sandbox.hortonworks.com:~
+-- On sandbox
+hadoop fs -mkdir /user/root/cards
+hadoop fs -put deckofcards.txt /user/root/cards
+hadoop fs -ls /user/root/cards
+-- launch hive by running "hive"
+CREATE DATABASE IF NOT EXISTS cards;
+USE cards;
+CREATE EXTERNAL TABLE deck_of_cards_external
+(color string,
+suit string,
+pip string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+LOCATION '/user/root/cards';
+
+
 -- Create ods tables (mostly they will follow same structure, except additional audit columns)
 use retail_ods;
 CREATE TABLE categories (

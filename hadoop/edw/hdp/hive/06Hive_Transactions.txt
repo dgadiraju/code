@@ -1,0 +1,32 @@
+-- Creating database (if not exists)
+CREATE DATABASE IF NOT EXISTS hive_demo;
+
+-- set hive.txn.manager by default it uses DummyTxnManager
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+
+-- Also make sure these properties are set
+--    hive.support.concurrency – true
+--    hive.enforce.bucketing – true (Not required as of Hive 2.0)
+--    hive.exec.dynamic.partition.mode – nonstrict
+--    hive.compactor.initiator.on – true (for exactly one instance of the Thrift metastore service)
+--    hive.compactor.worker.threads – a positive number on at least one instance of the Thrift metastore service
+
+-- Creating table
+-- Make sure table is bucketed, file format is orc and 
+-- transactional is set to true under tblproperties
+create table hive_transactions (i int, j string)
+clustered by (i) into 4 buckets
+stored as orc
+tblproperties ('transactional'='true');
+
+-- Inserting data
+insert into table hive_transactions values (1, 'itversity');
+insert into table hive_transactions values (2, 'itversity');
+
+--or insert into table hive_transactions (i, j) values (1, 'itversity');
+
+-- Updating data
+update hive_transactions set j = 'IT Versity' where i = 2;
+
+-- Deleting data
+delete hive_transactions where i = 1;

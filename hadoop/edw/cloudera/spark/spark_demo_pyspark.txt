@@ -289,22 +289,22 @@ ordersJoinOrderItemsMap = ordersJoinOrderItems.map(lambda t: ((t[1][1].split(","
 revenuePerDayPerOrder = ordersJoinOrderItemsMap.reduceByKey(lambda acc, value: acc + value)
 revenuePerDayPerOrderMap = revenuePerDayPerOrder.map(lambda rec: (rec[0][0], rec[1]))
 
-revenuePerDayPerOrder = revenuePerDayPerOrderMap.combineByKey( \
+revenuePerDay = revenuePerDayPerOrderMap.combineByKey( \
 lambda x: (x, 1), \
 lambda acc, revenue: (acc[0] + revenue, acc[1] + 1), \
 lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
 )
 
-revenuePerDayPerOrder = revenuePerDayPerOrderMap.aggregateByKey( \
+revenuePerDay = revenuePerDayPerOrderMap.aggregateByKey( \
 (0, 0), \
 lambda acc, revenue: (acc[0] + revenue, acc[1] + 1), \
 lambda total1, total2: (round(total1[0] + total2[0], 2), total1[1] + total2[1]) \
 )
 
-for data in revenuePerDayPerOrder.collect():
+for data in revenuePerDay.collect():
   print(data)
 
-avgRevenuePerDay = revenuePerDayPerOrder.map(lambda x: (x[0], x[1][0]/x[1][1]))
+avgRevenuePerDay = revenuePerDay.map(lambda x: (x[0], x[1][0]/x[1][1]))
 
 #Customer id with max revenue
 ordersRDD = sc.textFile("/user/cloudera/sqoop_import/orders")

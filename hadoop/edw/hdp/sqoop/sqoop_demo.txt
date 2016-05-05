@@ -8,6 +8,14 @@ sqoop list-tables \
   --username retail_dba \
   --password hadoop
 
+sqoop import \
+  --connect "jdbc:mysql://hiveserver:3306/retail_db" \
+  --username=retail_dba \
+  --password=itversity \
+  --table departments \
+  --as-textfile \
+  --target-dir=/user/root/departments
+  
 sqoop eval \
   --connect "jdbc:mysql://sandbox.hortonworks.com:3306/retail_db" \
   --username retail_dba \

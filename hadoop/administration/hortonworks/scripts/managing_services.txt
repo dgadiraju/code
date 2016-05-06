@@ -1,0 +1,10 @@
+#Managing services using command line "curl"
+
+#https://cwiki.apache.org/confluence/display/AMBARI/Using+APIs+to+delete+a+service+or+all+host+components+on+a+host
+
+curl -u admin:admin -H "X-Requested-By: ambari" -X GET  http://hdpserver.itversity.com:8080/api/v1/clusters/hdp/services/HIVE
+curl -u admin:admin -H "X-Requested-By: ambari" -X PUT -d '{"RequestInfo":{"context":"Stop Service"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}' http://hdpserver.itversity.com:8080/api/v1/clusters/hdp/services/HIVE
+curl -u admin:admin -H "X-Requested-By: ambari" -X PUT -d '{"RequestInfo":{"context":"Stop Component"},"Body":{"HostRoles":{"state":"INSTALLED"}}}' http://hdpserver.itversity.com:8080/api/v1/clusters/c1/hosts/HOSTNAME/host_components/COMPONENT_NAME
+curl -u admin:admin -H "X-Requested-By: ambari" -X PUT -d '{"RequestInfo":{"context":"Stop All Components"},"Body":{"ServiceComponentInfo":{"state":"INSTALLED"}}}' http://hdpserver.itversity.com:8080/api/v1/clusters/hdp/services/HIVE/components/COMPONENT_NAME
+
+curl -u admin:admin -H "X-Requested-By: ambari" -X DELETE  http://hdpserver.itversity.com:8080/api/v1/clusters/hdp/services/HIVE

@@ -12,3 +12,5 @@ curl -u admin:admin -H "X-Requested-By: ambari" -X DELETE  http://hdpserver.itve
 curl -i -H "X-Requested-By: ambari" -u admin:admin -X PUT \
      -d '{"RequestInfo":{"context":"Stop Service"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}' \
      http://namenode:8080/api/v1/clusters/hdp/services/OOZIE
+
+curl -u admin:admin -H "X-Requested-By: ambari" -X DELETE  http://namenode:8080/api/v1/clusters/hdp/services/OOZIE

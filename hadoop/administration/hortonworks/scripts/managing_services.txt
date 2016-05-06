@@ -8,3 +8,7 @@ curl -u admin:admin -H "X-Requested-By: ambari" -X PUT -d '{"RequestInfo":{"cont
 curl -u admin:admin -H "X-Requested-By: ambari" -X PUT -d '{"RequestInfo":{"context":"Stop All Components"},"Body":{"ServiceComponentInfo":{"state":"INSTALLED"}}}' http://hdpserver.itversity.com:8080/api/v1/clusters/hdp/services/HIVE/components/COMPONENT_NAME
 
 curl -u admin:admin -H "X-Requested-By: ambari" -X DELETE  http://hdpserver.itversity.com:8080/api/v1/clusters/hdp/services/HIVE
+
+curl -i -H "X-Requested-By: ambari" -u admin:admin -X PUT \
+     -d '{"RequestInfo":{"context":"Stop Service"},"Body":{"ServiceInfo":{"state":"INSTALLED"}}}' \
+     http://namenode:8080/api/v1/clusters/hdp/services/OOZIE

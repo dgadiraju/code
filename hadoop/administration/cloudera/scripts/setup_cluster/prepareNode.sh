@@ -43,12 +43,12 @@ echo vm.swappiness = 0 | sudo tee -a /etc/sysctl.conf
 
 #Set File Handle Limits
 echo -e "\nSetting File Handle Limits"
-sudo -c 'echo hdfs – nofile 32768 >> /etc/security/limits.conf'
-sudo -c 'echo mapred – nofile 32768 >> /etc/security/limits.conf'
-sudo -c 'echo hbase – nofile 32768 >> /etc/security/limits.conf'
-sudo -c 'echo hdfs – nproc 32768 >> /etc/security/limits.conf'
-sudo -c 'echo mapred – nproc 32768 >> /etc/security/limits.conf'
-sudo -c 'echo hbase – nproc 32768 >> /etc/security/limits.conf'
+sudo -- sh -c 'echo hdfs – nofile 32768 >> /etc/security/limits.conf'
+sudo -- sh -c 'echo mapred – nofile 32768 >> /etc/security/limits.conf'
+sudo -- sh -c 'echo hbase – nofile 32768 >> /etc/security/limits.conf'
+sudo -- sh -c 'echo hdfs – nproc 32768 >> /etc/security/limits.conf'
+sudo -- sh -c 'echo mapred – nproc 32768 >> /etc/security/limits.conf'
+sudo -- sh -c 'echo hbase – nproc 32768 >> /etc/security/limits.conf'
 
 echo -e "\n****************************"
 echo "Prepare Nodes COMPLETE!"

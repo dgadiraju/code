@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Autodetect JAVA_HOME if not defined
+. /usr/lib/bigtop-utils/bigtop-detect-javahome
+
+${JAVA_HOME}/bin/java -jar /usr/lib/avro/avro-tools.jar $@

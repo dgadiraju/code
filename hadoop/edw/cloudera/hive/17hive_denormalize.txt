@@ -1,0 +1,21 @@
+select d.department_name, substr(o.order_date, 1, 7) month, 
+sum(oi.order_item_subtotal) monthly_revenue
+from orders o join order_items oi on oi.order_item_order_id = o.order_id
+join products p on oi.order_item_product_id = p.product_id
+join categories c on p.product_category_id = c.category_id
+join departments d on c.category_department_id = d.department_id
+where o.order_date like '2013%'
+group by d.department_name, substr(o.order_date, 1, 7);
+
+create table retail_denormalized 
+row format delimited fields terminated by '|'
+as
+select d.*, oi.*, o.order_date 
+from orders o join order_items oi on oi.order_item_order_id = o.order_id
+join products p on oi.order_item_product_id = p.product_id
+join categories c on p.product_category_id = c.category_id
+join departments d on c.category_department_id = d.department_id;
+
+select department_name, substr(order_date, 1, 7) order_month, sum(order_item_subtotal) monthly_revenue 
+from retail_denormalized where order_date like '2013%'
+group by department_name, substr(order_date, 1, 7);

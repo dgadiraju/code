@@ -34,7 +34,7 @@ set hive.execution.engine=mr;
 
 -- Validate partition parameters
 hive.exec.dynamic.partition=true
-hive.exec.dynamic.partition.mode=strict
+hive.exec.dynamic.partition.mode=nostrict
 
 -- If hive.exec.dynamic.partition.mode nonstrict, no need to add any partitions
 -- Use insert command to copy data from source table orders

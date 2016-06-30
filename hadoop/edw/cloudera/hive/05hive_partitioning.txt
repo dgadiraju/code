@@ -1,1 +1,68 @@
+-- Creating partitioned table
+CREATE TABLE orders_partitioned_static (
+  order_id int,
+  order_date string,
+  order_customer_id int,
+  order_status string
+)
+PARTITIONED BY (order_month string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+-- Adding static partitions
+alter table orders_partitioned_static add partition (order_month='2014-01');
+
+-- Copying data into static partition
+-- Load command works when the files being copied only have data with order_date from 2014-01
+-- Using insert command
+insert into table orders_partitioned_static partition (order_month='2014-01')
+select * from orders where order_date like '2014-01%';
+
+
+CREATE TABLE orders_partitioned_dynamic_nonstrict (
+  order_id int,
+  order_date string,
+  order_customer_id int,
+  order_status string
+)
+PARTITIONED BY (order_month string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+-- Make sure hive execution engine is pointing to mr (for Cloudera certifications)
+set hive.execution.engine=mr;
+
+-- Validate partition parameters
+hive.exec.dynamic.partition=true
+hive.exec.dynamic.partition.mode=strict
+
+-- If hive.exec.dynamic.partition.mode nonstrict, no need to add any partitions
+-- Use insert command to copy data from source table orders
+insert into table orders_partitioned_dynamic_nonstrict partition (order_month)
+select o.*, substr(order_date, 1, 7) order_month from orders o;
+
+CREATE TABLE orders_partitioned_dynamic_strict (
+  order_id int,
+  order_date string,
+  order_customer_id int,
+  order_status string
+)
+PARTITIONED BY (order_year string, order_month string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+STORED AS TEXTFILE;
+
+-- Make sure hive execution engine is pointing to mr (for Cloudera certifications)
+set hive.execution.engine=mr;
+
+-- Validate partition parameters
+hive.exec.dynamic.partition=true
+hive.exec.dynamic.partition.mode=strict
+
+-- If hive.exec.dynamic.partition.mode strict we need to have static partition for parent
+alter table orders_partitioned_dynamic_strict add partition (order_year='2014', order_month='01');
+
+-- If hive.exec.dynamic.partition.mode nostrict, no need to add any partitions
+-- Use insert command to copy data from source table orders
+insert into table orders_partitioned_dynamic_strict partition (order_year='2014', order_month)
+select o.*, substr(order_date, 6, 2) order_month from orders o where order_date like '2014%';
 

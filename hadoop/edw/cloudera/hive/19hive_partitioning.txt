@@ -61,7 +61,7 @@ hive.exec.dynamic.partition.mode=strict
 -- If hive.exec.dynamic.partition.mode strict we need to have static partition for parent
 alter table orders_partitioned_dynamic_strict 
   add partition (order_year='2013', order_month='01')
-  add partition (order_year='2014', order_month='01');
+      partition (order_year='2014', order_month='01');
 
 -- If hive.exec.dynamic.partition.mode nostrict, no need to add any partitions
 -- Use insert command to copy data from source table orders

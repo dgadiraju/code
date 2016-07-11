@@ -19,6 +19,7 @@ sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 #Turn on NTPD
 echo "Setting up NTPD and syncing time"
 #Need to add a check to see if NTPD is installed.  If not install it
+sudo yum -y install ntp
 sudo chkconfig ntpd on
 sudo ntpd -q
 sudo service ntpd start

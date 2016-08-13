@@ -1,0 +1,82 @@
+[0m[[0mdebug[0m] [0m[0m
+[0m[[0mdebug[0m] [0mInitial source changes: [0m
+[0m[[0mdebug[0m] [0m	removed:Set()[0m
+[0m[[0mdebug[0m] [0m	added: Set(C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala, C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala, C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala)[0m
+[0m[[0mdebug[0m] [0m	modified: Set()[0m
+[0m[[0mdebug[0m] [0mRemoved products: Set()[0m
+[0m[[0mdebug[0m] [0mExternal API changes: API Changes: Set()[0m
+[0m[[0mdebug[0m] [0mModified binary dependencies: Set()[0m
+[0m[[0mdebug[0m] [0mInitial directly invalidated sources: Set(C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala, C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala, C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala)[0m
+[0m[[0mdebug[0m] [0m[0m
+[0m[[0mdebug[0m] [0mSources indirectly invalidated by:[0m
+[0m[[0mdebug[0m] [0m	product: Set()[0m
+[0m[[0mdebug[0m] [0m	binary dep: Set()[0m
+[0m[[0mdebug[0m] [0m	external source: Set()[0m
+[0m[[0mdebug[0m] [0mAll initially invalidated sources: Set(C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala, C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala, C:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala)[0m
+[0m[[0mdebug[0m] [0mRecompiling all 3 sources: invalidated sources (3) exceeded 50.0% of all sources[0m
+[0m[[0minfo[0m] [0mCompiling 3 Scala sources to C:\Users\ollopollo\workspace\simple-spark-project\target\scala-2.10\classes...[0m
+[0m[[0mdebug[0m] [0mGetting compiler-interface from component compiler for Scala 2.10.4[0m
+[0m[[0mdebug[0m] [0mGetting compiler-interface from component compiler for Scala 2.10.4[0m
+[0m[[0mdebug[0m] [0mRunning cached compiler 28a4d23c, interfacing (CompilerInterface) with Scala compiler version 2.10.4[0m
+[0m[[0mdebug[0m] [0mCalling Scala compiler with arguments  (CompilerInterface):[0m
+[0m[[0mdebug[0m] [0m	-bootclasspath[0m
+[0m[[0mdebug[0m] [0m	C:\Java\jdk1.8.0_51\jre\lib\resources.jar;C:\Java\jdk1.8.0_51\jre\lib\rt.jar;C:\Java\jdk1.8.0_51\jre\lib\sunrsasign.jar;C:\Java\jdk1.8.0_51\jre\lib\jsse.jar;C:\Java\jdk1.8.0_51\jre\lib\jce.jar;C:\Java\jdk1.8.0_51\jre\lib\charsets.jar;C:\Java\jdk1.8.0_51\jre\lib\jfr.jar;C:\Java\jdk1.8.0_51\jre\classes;C:\Users\ollopollo\.sbt\boot\scala-2.10.4\lib\scala-library.jar[0m
+[0m[[0mdebug[0m] [0m	-classpath[0m
+[0m[[0mdebug[0m] [0m	C:\Users\ollopollo\workspace\simple-spark-project\target\scala-2.10\classes[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala:19: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.Logging[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala:21: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.log4j.{Level, Logger}[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala:24: not found: type Logging[0m
+[0m[[31merror[0m] [0mobject StreamingExamples extends Logging {[0m
+[0m[[31merror[0m] [0m                                 ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala:28: not found: value Logger[0m
+[0m[[31merror[0m] [0m    val log4jInitialized = Logger.getRootLogger.getAllAppenders.hasMoreElements[0m
+[0m[[31merror[0m] [0m                           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala:32: not found: value logInfo[0m
+[0m[[31merror[0m] [0m      logInfo("Setting log level to [WARN] for streaming example." +[0m
+[0m[[31merror[0m] [0m      ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\StreamingExamples.scala:34: not found: value Logger[0m
+[0m[[31merror[0m] [0m      Logger.getRootLogger.setLevel(Level.WARN)[0m
+[0m[[31merror[0m] [0m      ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:20: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.streaming.{Seconds, StreamingContext}[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:21: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.SparkContext._[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:22: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.streaming.twitter._[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:23: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.SparkConf[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:56: not found: type SparkConf[0m
+[0m[[31merror[0m] [0m    val sparkConf = new SparkConf().setAppName("TwitterPopularTags").setMaster("local[2]")[0m
+[0m[[31merror[0m] [0m                        ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:57: not found: type StreamingContext[0m
+[0m[[31merror[0m] [0m    val ssc = new StreamingContext(sparkConf, Seconds(2))[0m
+[0m[[31merror[0m] [0m                  ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\TwitterPopularTags.scala:58: not found: value TwitterUtils[0m
+[0m[[31merror[0m] [0m    val stream = TwitterUtils.createStream(ssc, None, filters)[0m
+[0m[[31merror[0m] [0m                 ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala:2: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.SparkContext[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala:3: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.SparkContext._[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala:4: object apache is not a member of package org[0m
+[0m[[31merror[0m] [0mimport org.apache.spark.SparkConf[0m
+[0m[[31merror[0m] [0m           ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala:12: not found: type SparkConf[0m
+[0m[[31merror[0m] [0m    val conf = new SparkConf().setAppName("Simple Application").setMaster("local[2]").set("spark.executor.memory", "1g")[0m
+[0m[[31merror[0m] [0m                   ^[0m
+[0m[[31merror[0m] [0mC:\Users\ollopollo\workspace\simple-spark-project\src\main\java\simpleSpark.scala:13: not found: type SparkContext[0m
+[0m[[31merror[0m] [0m    val sc = new SparkContext(conf)[0m
+[0m[[31merror[0m] [0m                 ^[0m
+[0m[[31merror[0m] [0m18 errors found[0m
+[0m[[0mdebug[0m] [0mCompilation failed (CompilerInterface)[0m
+[0m[[31merror[0m] [0m(compile:[31mcompileIncremental[0m) Compilation failed[0m

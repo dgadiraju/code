@@ -1,0 +1,1 @@
+case class NyseData(symbol:String,vol:Int)
